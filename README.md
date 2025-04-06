@@ -1691,7 +1691,7 @@ QPushButton:!hover, QRadioButton:!hover, QCheckBox:!hover
 
 
 
-## 创建和使用插件
+# 创建和使用插件
 
 在应用程序中使用插件是扩展应用程序最强大的方法之一，许多人日常使用的应用程序都从插件的强大功能中受益。**插件仅仅是一个库（在Windows上是`*.dll`，在Linux上是`*.so`等），它可以在运行时加载和使用，以处理特定任务，但当然，它不能像独立应用程序那样执行，并且它依赖于使用它的应用程序。**在本书中，我们也将使用插件来扩展我们的计算机视觉应用程序。
 
@@ -1699,7 +1699,7 @@ QPushButton:!hover, QRadioButton:!hover, QCheckBox:!hover
 
 **首先，我们需要定义一组接口，这些接口是我们的应用程序与插件通信所需的。==在C++中，接口的等效物是具有纯虚函数的类==。**因此，我们基本上需要一个接口，其中包含我们期望插件中存在的所有函数。这就是一般创建插件的方式，也是第三方开发者为其他人开发的应用程序编写插件的方式。是的，他们知道插件的接口，并且只需要用真正做某事的实际代码来填充它。
 
-### 接口
+### 插件接口
 
 接口比它乍一看时更重要。是的，**它基本上是一个什么都不做的类**，但是，它为我们的应用程序所需的所有插件勾勒出了草图（框架），这一点将持续很长时间。因此，**我们需要确保从一开始就在插件接口中包含所有必需的函数，否则，之后添加、删除或修改函数可能几乎不可能。虽然目前我们正在处理一个示例项目，这看起来可能不那么严重，但在现实生活中的项目中，这些通常是决定应用程序扩展性的一些关键因素。**所以，现在我们知道了接口的重要性，我们可以开始为我们的示例项目创建一个接口了。
 
@@ -1786,19 +1786,18 @@ Q_DECLARE_INTERFACE(CvPluginInterface, CVPLUGININTERFACE_IID)  // 宏将我们�
 >     
 >     ---
 >     输出：
->     /Users/fox/雪狸的文件/Programma/OpenMP/Cpp11Thread/untitled/cmake-build-debug/untitled
 >     Base Constructor
 >     Derived Constructor
 >     Base Destructor
 >     
 >     进程已结束，退出代码为 0
 >     ```
->
->     在这个例子中，`main`函数中我们创建了一个`Derived`类型的对象，但是用`Base`类型的指针来引用它。当我们删除这个对象时，由于`Base`的析构函数不是虚的，所以只有`Base`的析构函数被调用，`Derived`的析构函数不会被执行。这意味着如果`Derived`类中有特殊的资源释放逻辑（比如删除动态分配的内存），那么这些逻辑不会被执行，可能会导致资源泄露。
->
->     要修正这个问题，我们需要将`Base`类的析构函数声明为虚：
->
->     ```cpp
+>     
+>在这个例子中，`main`函数中我们创建了一个`Derived`类型的对象，但是用`Base`类型的指针来引用它。当我们删除这个对象时，由于`Base`的析构函数不是虚的，所以只有`Base`的析构函数被调用，`Derived`的析构函数不会被执行。这意味着如果`Derived`类中有特殊的资源释放逻辑（比如删除动态分配的内存），那么这些逻辑不会被执行，可能会导致资源泄露。
+>     
+>要修正这个问题，我们需要将`Base`类的析构函数声明为虚：
+>     
+>```cpp
 >     class Base {
 >     public:
 >         Base() { std::cout << "Base Constructor\n"; }
@@ -1807,7 +1806,6 @@ Q_DECLARE_INTERFACE(CvPluginInterface, CVPLUGININTERFACE_IID)  // 宏将我们�
 >     
 >     ---
 >     输出：
->     /Users/fox/雪狸的文件/Programma/OpenMP/Cpp11Thread/untitled/cmake-build-debug/untitled
 >     Base Constructor
 >     Derived Constructor
 >     Derived Destructor  // 可以看到子类的析构函数被执行了
@@ -1815,7 +1813,7 @@ Q_DECLARE_INTERFACE(CvPluginInterface, CVPLUGININTERFACE_IID)  // 宏将我们�
 >     
 >     进程已结束，退出代码为 0
 >     ```
->
+>     
 >     这样，当我们通过基类指针删除派生类对象时，析构函数的调用会遵循动态绑定，即先调用`Derived`的析构函数，然后调用`Base`的析构函数（构造-爸爸盖房子，析构-孩子拆房子），从而确保所有资源都被正确管理和释放。
 >
 > 2. **多态**的重要性：在C++中，多态允许我们通过基类的指针或引用来调用派生类的方法。如果基类将要被用作多态基类（即通过基类的指针或引用来访问派生类对象），则必须为这个基类提供虚析构函数。这样做确保了当通过基类的指针删除派生类对象时，能够正确地调用派生类的析构函数，避免内存泄漏。
@@ -1833,7 +1831,7 @@ Q_DECLARE_INTERFACE(CvPluginInterface, CVPLUGININTERFACE_IID)  // 宏将我们�
 
 
 
-### 插件
+## 插件
 
 我们现在将创建一个名为`median_filter_plugin`的插件，该插件使用我们的`CvPluginInterface`接口类。首先从主菜单中选择`文件`，然后`新建文件或项目`。然后，选择`库`和`C++库`，如下图所示：
 
@@ -1965,268 +1963,7 @@ public:
 
 
 
-### 插件加载器和用户
-
-现在，我们将使用上一节书中创建的插件。首先，创建一个新的 Qt Widgets 应用项目。让我们将其命名为 `Plugin_User`。当项目创建好后，首先在 `*.pro` 文件中添加 OpenCV 框架（你已经见过很多次了），然后继续创建一个类似于下面这样的用户界面：
-
-1. 显然，你需要修改 `mainwindow.ui` 文件，设计它使其看起来像下图一样，并设置所有对象名称，如下图所示：
-
-![](doc/img/08d03304-663a-49d2-bc89-b68d12bb16fa.png)
-
-确保使用与前图中相同类型的布局。
-
-2. 接下来，将 `cvplugininterface.h` 文件添加到此项目的文件夹中，然后，使用“添加现有文件”选项，将其添加到项目中，就像你在创建插件时所做的那样。
-
-3. 现在，我们可以开始编写我们的用户界面代码以及加载、检查和使用插件所需的代码。首先，在 `mainwindow.h` 文件中添加所需的头文件，如下所示：
-
-    123
-
-```cpp
-#include <QDir>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QPluginLoader>
-#include <QFileInfoList>
-#include "opencv2/opencv.hpp"
-#include "cvplugininterface.h"
-```
-
-4. 然后，在 `MainWindow` 类的私有成员中，紧接着 `};` 前，添加一个单独的函数，这似乎是一个好位置：
-
-  ```cpp
-  void getPluginsList();
-  ```
-
-5. 现在，切换到 `mainwindow.cpp` 并在文件顶部任何现有的 `#include` 行之后，添加以下定义：
-
-  ```cpp
-  #define FILTERS_SUBFOLDER "/filter_plugins/"
-  ```
-
-6. 然后，将以下函数添加到 `mainwindow.cpp` 中，这基本上是 `getPluginsList` 函数的实现：
-
-```cpp
-void MainWindow::getPluginsList() 
-{ 
-  QDir filtersDir(qApp->applicationDirPath() + FILTERS_SUBFOLDER); 
-  QFileInfoList filters = filtersDir.entryInfoList( 
-                          QDir::NoDotAndDotDot | 
-                          QDir::Files, QDir::Name); 
-  
-  foreach(QFileInfo filter, filters) 
-  { 
-    if(QLibrary::isLibrary(filter.absoluteFilePath())) 
-  { 
-    QPluginLoader pluginLoader(  filter.absoluteFilePath(), this ); 
-      
-    if(dynamic_cast<CvPluginInterface*>( 
-        pluginLoader.instance())) 
-    { 
-        ui->filtersList->addItem( 
-            filter.fileName()); 
-        pluginLoader 
-            .unload(); // we can unload for now 
-    } 
-    else 
-    { 
-        QMessageBox::warning( 
-            this, tr("Warning"), 
-            QString(tr("Make sure %1 is a correct" 
-            " plugin for this application<br>" 
-            "and it's not in use by some other" 
-            " application!")) 
-            .arg(filter.fileName())); 
-    } 
-  } 
-  else 
-  { 
-    QMessageBox::warning(this, tr("Warning"), 
-        QString(tr("Make sure only plugins" 
-            " exist in plugins folder.<br>" 
-            "%1 is not a plugin.")) 
-            .arg(filter.fileName())); 
-  } 
-  }   
-
-  if(ui->filtersList->count() <= 0) 
-  { 
-    QMessageBox::critical(this, tr("No Plugins"), 
-    tr("This application cannot work without plugins!" 
-    "<br>Make sure that filter_plugins folder exists " 
-    "in the same folder as the application<br>and that " 
-    "there are some filter plugins inside it")); 
-    this->setEnabled(false); 
-  } 
-} 
-```
-
-让我们首先了解这个函数做了什么。上面的函数，我们将在 `MainWindow` 类的构造函数中调用：
-
-- 首先，假设在名为 `filter_plugins` 的子文件夹中存在插件，而这个子文件夹位于与应用程序可执行文件相同的文件夹中。（稍后，我们需要在此项目的构建文件夹内手动创建此文件夹，然后将在前一步骤中构建的插件复制到这个新创建的文件夹中。）以下用法用于获取过滤器插件子文件夹的直接路径：
-
-```cpp
-qApp->applicationDirPath() + FILTERS_SUBFOLDER
-```
-
-- 接下来，它使用 `QDir` 类的 `entryInfoList` 函数从文件夹中提取 `QFileInfoList`。`QFileInfoList` 类本质上是一个包含 `QFileInfo` 项的 `QList` 类（`QList<QFileInfo>`），每个 `QFileInfo` 项提供有关磁盘上文件的信息。在这种情况下，每个文件都将是一个插件。
-- 之后，通过在 foreach 循环中迭代文件列表，它检查插件文件夹中的每个文件，以确保只接受插件（库）文件，使用以下函数：
-
-```cpp
-QLibrary::isLibrary
-```
-
-- 通过上一步的检查后的每个库文件，然后检查它是否与我们的插件接口兼容。我们不会让任何库文件被接受为插件，因此我们使用以下代码来实现这一目的：
-
-```cpp
-dynamic_cast<CvPluginInterface*>(pluginLoader.instance())
-```
-
-- 如果一个库在前一步的测试中通过，则被视为正确的插件（与 `CvPluginInterface` 兼容），添加到我们窗口中的列表小部件中，然后卸载。我们可以根据需要简单地重新加载和使用它。
-- 在每一步，如果有问题，使用 `QMessageBox` 向用户显示有用信息。另外，如果最后列表为空，意味着没有可用的插件，窗口上的小部件将被禁用，应用程序将不可用。
-
-1. 不要忘记在 `MainWindow` 构造函数中，紧接着 `setupUi` 调用后调用此函数。
-2. 我们还需要为 `inputImgButton` 编写代码，用于打开图像文件。代码如下：
-
-```
-cppCopy code
-void MainWindow::on_inputImgButton_pressed()
-{
-    QString fileName =
-       QFileDialog::getOpenFileName(
-       this,
-       tr("Open Input Image"),
-       QDir::currentPath(),
-       tr("Images") + " (*.jpg *.png *.bmp)");
-       if(QFile::exists(fileName))
-      {
-       ui->inputImgEdit->setText(fileName);
-      }
-}
-```
-
-我们之前见过这段代码，它不需要解释。它只是允许你打开一个图像文件，并确保它被正确选中。
-
-1. 现在，我们将编写 `helpButton` 的代码，它将显示插件中 `description` 函数的结果：
-
-```cpp
- void MainWindow::on_helpButton_pressed() 
- { 
-   if(ui->filtersList->currentRow() >= 0)
-  { 
-   QPluginLoader pluginLoader( 
-     qApp->applicationDirPath() +
-     FILTERS_SUBFOLDER +
-     ui->filtersList->currentItem()->text());
-     CvPluginInterface *plugin = 
-       dynamic_cast<CvPluginInterface*>(
-     pluginLoader.instance()); 
-     if(plugin) 
-     { 
-       QMessageBox::information(this, tr("Plugin Description"), 
-          plugin->description()); 
-     } 
-     else 
-     { 
-      QMessageBox::warning(this, tr("Warning"),
-      QString(tr("Make sure plugin %1" " exists and is usable.")) 
-     .arg(ui->filtersList->currentItem()->text())); 
-     }
-  }
-  else
-  { 
-    QMessageBox::warning(this, tr("Warning"), QString(tr("First 
-      select a filter" " plugin from the list.")));
-  } 
-}
-```
-
-我们使用 `QPluginLoader` 类来正确地从列表中加载一个插件，然后使用 `instance` 函数获取它的一个实例，最后，我们将通过接口调用插件中的函数。
-
-
-
-10. 相同的逻辑也适用于 `filterButton`。唯一的区别是这次，我们将调用实际的过滤函数，如下所示：
-
-    ```cpp
-    void MainWindow::on_filterButton_pressed() 
-    {
-      if(ui->filtersList->currentRow() >= 0 && 
-        !ui->inputImgEdit->text().isEmpty()) 
-      { 
-        QPluginLoader pluginLoader(qApp->applicationDirPath() +
-          FILTERS_SUBFOLDER + 
-          ui->filtersList->currentItem()->text()); 
-          CvPluginInterface *plugin = 
-            dynamic_cast<CvPluginInterface*>(
-              pluginLoader.instance()); 
-            if(plugin)
-            { 
-             if(QFile::exists(ui->inputImgEdit->text()))
-             { 
-              using namespace cv;
-              Mat inputImage, outputImage;
-              inputImage = imread(ui->inputImgEdit->
-              text().toStdString()); 
-              plugin->processImage(inputImage, outputImage); 
-              imshow(tr("Filtered Image").toStdString(),
-                 outputImage); 
-             } 
-             else
-             { 
-               QMessageBox::warning(this, 
-                tr("Warning"), 
-                QString(tr("Make sure %1 exists.")) 
-                .arg(ui->inputImgEdit->text()));
-             }
-            } 
-            else
-            { 
-             QMessageBox::warning(this, tr("Warning"), 
-             QString(tr(
-             "Make sure plugin %1 exists and is usable." )) 
-             .arg(ui->filtersList->currentItem()->text())); 
-            }
-           } 
-         else
-         {
-          QMessageBox::warning(this, tr("Warning"), 
-          QString(tr( "First select a filter plugin from the list." ))); 
-      }
-    }
-    ```
-
-    始终让用户了解正在发生的事情以及可能发生的问题是非常重要的，使用 `QMessageBox` 或其他类型的信息提供能力可以做到这一点。正如你所看到的，它们通常甚至需要比实际要完成的任务更多的代码，但这对于避免应用程序崩溃至关重要。默认情况下，Qt 不支持异常处理，并信任开发者将使用足够的 `if` 和 `else` 指令来处理所有可能的崩溃场景。关于前面代码示例的另一个重要说明是 `tr` 函数。记住，对于字面字符串始终使用它。这样，你可以在以后轻松地使你的应用程序支持多语言。即使你不打算支持多种语言，养成在字面字符串中添加 `tr` 函数的好习惯也无妨。
-
-    现在，我们准备运行我们的 `Plugin_User` 应用程序。如果我们现在运行它，我们将看到一个错误消息（我们自己放置的），并且我们将被警告没有插件。为了能够使用我们的 `Plugin_User` 应用程序，我们需要做以下事情：
-
-    1. 在 `Plugin_User` 项目的构建文件夹内创建一个名为 `filter_plugins` 的文件夹。这是项目的可执行文件创建的文件夹。
-    2. 复制我们构建的插件文件（即 `median_filter_plugin` 项目的构建文件夹内的库文件），并将其粘贴到第一步中的 `filter_plugins` 文件夹中。如前所述，像可执行程序一样，插件文件的扩展名取决于操作系统。
-
-    现在，尝试运行 `Plugin_User`，一切应该都是好的。你应该能够在列表中看到单个插件，选择它，点击帮助按钮以获取有关它的信息，点击过滤按钮以在图像上应用插件中的过滤器。如下图所示：
-
-    ![](doc/img/efc2002d-4608-41dc-ba23-0cbb94bd0869.png)
-
-    尝试创建另一个名为 `gaussian_filter_plugin` 的插件，并按照 `median_filter_plugin` 的相同一套指令操作，这次使用你在[第二章](#9009a91a-b569-44fc-b9b4-a5f6a8421ba8.xhtml) *创建我们的第一个 Qt 和 OpenCV 项目*中看到的 `gaussianBlur` 函数。然后构建它，并将其放入 `filter_plugins` 文件夹，再次运行 `Plugin_User` 应用程序。同时，尝试放入一些随机的库文件（和其他非库文件）来测试我们在这些场景下编写的应用程序。
-
-    这里有一个非常重要的事情需要注意，那就是你必须确保不要使用在 Debug 模式下构建的插件与在 Release 模式下构建的应用程序一起使用，反之亦然。加载插件还适用其他重要规则，例如用高版本的 Qt 构建的插件不能用于用低版本的 Qt 构建的应用程序。用较低的 Qt 主版本号构建的插件不能用于用较高的 Qt 主版本号构建的应用程序。始终参考 Qt 文档中的 *部署插件* 文章或 Qt Creator 帮助模式，以获取有关插件及其使用的更新信息。
-
-    
-
-始终让用户了解正在发生的事情以及可能发生的问题是非常重要的，使用 `QMessageBox` 或其他类型的信息提供能力可以做到这一点。正如你所看到的，它们通常甚至需要比实际要完成的任务更多的代码，但这对于避免应用程序崩溃至关重要。默认情况下，Qt 不支持异常处理，并信任开发者将使用足够的 `if` 和 `else` 指令来处理所有可能的崩溃场景。关于前面代码示例的另一个重要说明是 `tr` 函数。记住，对于字面字符串始终使用它。这样，你可以在以后轻松地使你的应用程序支持多语言。即使你不打算支持多种语言，养成在字面字符串中添加 `tr` 函数的好习惯也无妨。
-
-现在，我们准备运行我们的 `Plugin_User` 应用程序。如果我们现在运行它，我们将看到一个错误消息（我们自己放置的），并且我们将被警告没有插件。为了能够使用我们的 `Plugin_User` 应用程序，我们需要做以下事情：
-
-1. 在 `Plugin_User` 项目的构建文件夹内创建一个名为 `filter_plugins` 的文件夹。这是项目的可执行文件创建的文件夹。
-2. 复制我们构建的插件文件（即 `median_filter_plugin` 项目的构建文件夹内的库文件），并将其粘贴到第一步中的 `filter_plugins` 文件夹中。如前所述，像可执行程序一样，插件文件的扩展名取决于操作系统。
-
-现在，尝试运行 `Plugin_User`，一切应该都是好的。你应该能够在列表中看到单个插件，选择它，点击帮助按钮以获取有关它的信息，点击过滤按钮以在图像上应用插件中的过滤器。如下图所示：
-
-![](doc/img/efc2002d-4608-41dc-ba23-0cbb94bd0869.png)
-
-尝试创建另一个名为 `gaussian_filter_plugin` 的插件，并按照 `median_filter_plugin` 的相同一套指令操作，这次使用你在[第二章](#9009a91a-b569-44fc-b9b4-a5f6a8421ba8.xhtml) *创建我们的第一个 Qt 和 OpenCV 项目*中看到的 `gaussianBlur` 函数。然后构建它，并将其放入 `filter_plugins` 文件夹，再次运行 `Plugin_User` 应用程序。同时，尝试放入一些随机的库文件（和其他非库文件）来测试我们在这些场景下编写的应用程序。
-
-这里有一个非常重要的事情需要注意，那就是你必须确保不要使用在 Debug 模式下构建的插件与在 Release 模式下构建的应用程序一起使用，反之亦然。加载插件还适用其他重要规则，例如用高版本的 Qt 构建的插件不能用于用低版本的 Qt 构建的应用程序。用较低的 Qt 主版本号构建的插件不能用于用较高的 Qt 主版本号构建的应用程序。始终参考 Qt 文档中的 *部署插件* 文章或 Qt Creator 帮助模式，以获取有关插件及其使用的更新信息。
-
-# 插件加载器和用户
+## 插件加载器和用户
 
 现在，我们将使用上一节中创建的插件。首先，创建一个新的 Qt Widgets Application 项目。我们将其命名为 `Plugin_User`。项目创建后，首先将 OpenCV 框架添加到 \*.pro 文件中（你已经见过很多次了），然后开始创建类似于下面的用户界面：
 
