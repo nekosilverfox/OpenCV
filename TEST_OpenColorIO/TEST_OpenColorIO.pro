@@ -10,37 +10,25 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    hello_qt_opencv.cpp
+    widget.cpp
 
 HEADERS += \
-    hello_qt_opencv.h
+    widget.h
 
 FORMS += \
-    hello_qt_opencv.ui
+    widget.ui
+
+unix {
+    # 添加库路径
+    LIBS += -L/opt/homebrew/lib
+    LIBS += -lOpenEXR -lImath -ljpeg -lpng -lraw
+
+    INCLUDEPATH += /opt/homebrew/opt/opencolorio/include
+    LIBS += -lOpenColorIO -lyaml-cpp -lexpat
+}
+
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-# 加入 OpenCV
-win32: {
-   include("c:/dev/opencv/opencv.pri")
-}
-
-unix: !macx {
-   CONFIG += link_pkgconfig
-   PKGCONFIG += opencv
-}
-
-unix: macx {
-  include(/Users/fox/AppInstall/opencv-4.9.0/build/opencv.pri)
-  INCLUDEPATH += "/usr/local/include"
-  LIBS += -L"/usr/local/lib" \
-   -lopencv_world
-}
-
-RESOURCES += \
-    resources.qrc
-
-TRANSLATIONS = translation_ru.ts translation_zh_CN.ts

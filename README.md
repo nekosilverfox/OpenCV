@@ -331,7 +331,7 @@ OpenCV 在其网站的 Releases 页面维护其官方和稳定的发布版本 ([
 Linux 用户应在终端中运行以下命令，然后再继续进行 OpenCV 构建。 这些基本上是 OpenCV 本身的依赖关系，需要在配置和构建它之前就位：
 
 ```cpp
-sudp apt-get install libgtk2.0-dev and pkg-config 
+sudo apt-get install libgtk2.0-dev and pkg-config 
 ```
 
 **运行 CMake GUI 应用后，需要设置以下两个文件夹：**
@@ -724,7 +724,7 @@ Qt 窗口共有 3 种不同类型的条（实际上，一般来说是 Windows）
 
 Qt 小部件均具有`centralWidget`属性。 这是 Qt 设计器中特别用于 Windows 和容器小部件的东西。 使用它，您可以设置容器或窗口的布局，而无需在中央窗口小部件上拖放布局窗口小部件，只需使用设计器顶部的工具栏即可：
 
-![](doc/img/59ecd372-42c2-438d-b3bc-e00bf89a2ea6-1722741.png)
+![](doc/img/59ecd372-42c2-438d-b3bc-e00bf89a2ea6.png)
 
 您可能已经注意到工具栏中的四个小按钮（如前面的屏幕快照所示），它们看起来与左侧小部件工具箱中的布局完全一样（如下所示）：
 
@@ -807,6 +807,8 @@ void MainWindow::on_inputPushButton_clicked()
 
 在此，`OBJECTNAME`应该替换为发送信号的小部件的`OBJECTNAME`属性的值，`SIGNAL`替换为信号名称，`PARAMETERS`替换为确切的信号编号和参数类型。
 
+
+
 > 但是注意，这种创建方式是不推荐的，因为这是使用 **Qt 的==自动连接机制==**：
 >
 > 在Qt中，存在一种自动连接信号和槽的机制，这是通过QObject的`QMetaObject::connectSlotsByName()`函数实现的。当一个QWidget（包括其子类）对象被创建时，Qt会自动查找该对象中==**所有**==的槽函数，**如果槽函数的命名遵循`on_<objectName>_<signalName>`的模式，Qt将==自动==将这些槽连接到名称为`<objectName>`的对象发出的名为`<signalName>`的信号（也就是不通过写 `connect` 他就自动连接上了）。**
@@ -820,6 +822,8 @@ void MainWindow::on_inputPushButton_clicked()
 > 1. **隐式行为可能导致错误**：自动连接是一个**隐式过程**，开发者可能不清楚某个槽函数是否被自动连接，或者错误地认为某个槽函数会被自动连接。这可能导致调试困难，因为行为的预期与实际可能不符。
 > 2. **重构风险**：**如果对象名称或信号名称在未来发生变化，与之相关的自动连接也会受到影响**，可能会导致槽不再被正确连接，而编译器不会报错，因为这些连接是在运行时解析的。
 > 3. **代码可读性降低**：对于不熟悉Qt自动连接机制的开发者来说，可能会对这种隐式的连接方式感到困惑，这影响了代码的清晰度和可维护性。
+
+
 
 根据应用的要求，我们需要确保用户可以打开图像文件。 成功打开图像文件后，我们会将路径写入`inputLineEdit`小部件的`text`属性，以便用户可以看到他们选择的完整文件名和路径。 首先让我们看一下代码的外观，然后逐步介绍它：
 
@@ -841,7 +845,7 @@ void MainWindow::on_inputPushButton_clicked()
 
 要访问用户界面上的小部件或其他元素，只需使用`ui`对象。例如，可以通过`ui`类并通过编写以下行来简单地访问用户界面中的`inputLineEdit`小部件：
 
-`ui-> inputLineEdit`
+`ui->inputLineEdit`
 
 第一行实际上是大代码的简化版本。 正如您将在本书中学习的那样，Qt 提供了许多方便的函数和类来满足日常编程需求，例如将它们打包成非常短的函数。 首先让我们看看我们刚刚使用了哪些 Qt 类：
 
@@ -1228,6 +1232,8 @@ class MainWindow : public QMainWindow
 
 ## 用户界面编译器（uic）
 
+> [!note]
+>
 > 用户界面编译器（uic， User Interface Compiler）
 
 每当构建具有用户界面的 Qt 应用程序时，都会执行一个名为 `uic` 的 Qt 内部工具来处理和转换 `*.ui` 文件，使其成为 C++ 代码中可用的类和源代码。在我们的案例中，`mainwindow.h `被转换为 `ui_mainwindow.h` 文件，同样，你可以在构建文件夹中找到它。你可能已经注意到了这一点，但让我们提一下，你的 `mainwindow.cpp` 文件已经包含了这个头文件。检查文件的最顶部部分，你会找到以下两个 `include` 行：
@@ -1263,9 +1269,9 @@ Qt中的`moc`（**Meta-Object Compiler**）和`uic`（**User Interface Compiler*
 
 编译成最终应用程序的流程通常如下：
 
-1. **编写源代码**：你写好C++源代码和Qt特有的标记（如`Q_OBJECT`）。
-2. **预处理**：运行`moc`来处理所有定义了`Q_OBJECT`宏的类，生成含有元信息的C++源文件。
-3. **设计UI**：在Qt Designer中创建GUI，并保存为`.ui`文件。
+1. **编写源代码**：你写好 C++ 源代码和 Qt 特有的标记（如`Q_OBJECT`）。
+2. **预处理**：运行`moc`来处理所有定义了`Q_OBJECT`宏的类，生成含有元信息的 C++ 源文件。
+3. **设计UI**：在 Qt Designer 中创建 GUI，并保存为 `.ui` 文件。
 4. **UI编译**：运行`uic`将`.ui`文件转换为C++头文件。
 5. **资源编译**：如果你使用了Qt资源系统，`rcc`（Qt Resource Compiler）会被用来将资源文件（如图片、翻译文件）编译成为应用程序可用的二进制形式。
 6. **编译**：编译器（如g++, clang++）编译`源代码`和由`moc`和`uic`生成的代码。
@@ -1317,7 +1323,7 @@ Qt中的`moc`（**Meta-Object Compiler**）和`uic`（**User Interface Compiler*
 | MVC（模型-视图-控制器）      | MVC (Model-view-controller)                     | 这是一个广泛使用的设计模式，用于将应用程序或数据存储机制（模型）从用户界面（视图）和数据操纵（控制器）分离。 | `QTreeView`：这是一个树形实现的模型-视图。`QFileSystemModel`：用于基于本地文件系统的内容获取数据模型。`QFileSystemModel`（或任何其他`QAbstractItemModel`）与`QTreeView`（或任何其他`QAbstractItemView`）的组合可以是 MVC 设计模式的实现。 |
 | 观察者（或发布/订阅）        | Observer (or Publish/Subscribe)                 | 此设计模式用于使对象能够**监听**（或观察）其他对象中的变化并相应地做出反应。 | `QEvent`：这是所有 Qt 事件类的基础（信号和槽的实现机制）。将`QEvent`（及其所有众多子类）视为观察者设计模式的低级实现。 另一方面，Qt 支持`signal`和`slot`机制，这是使用观察者设计模式的更方便，更高级的方法。 |
 | 序列化                       | Serializer                                      | 当创建类（或对象）时，可以使用此模式，用于读取或写入其他对象。 | `QTextStream`：可用于在文件或其他 IO 设备中读取和写入**文本**。`QDataStream`：可用于从 IO 设备和文件读取或写入**二进制**数据。 |
-| 单例模式                     | Singleton                                       | 可以用来限制一个类只有一个实例。                             | `QApplication`：可用于以各种方式处理 Qt 小部件应用。确切地说，`QApplication`中的`instance()`函数（或全局`qApp`指针）是单例设计模式的示例。OpenCV 中的`cv::theRNG()`函数（用于获取默认的**随机数生成器**（**RNG**））是单例实现的示例。 请注意，RNG 类本身不是单例。 |
+| 单例模式                     | Singleton                                       | 可以用来限制一个类只有一个实例。                             | `QApplication`：可用于以各种方式处理 Qt 小部件应用。确切地说，`QApplication`中的`instance()`函数（或全局`qApp`指针）是单例设计模式的示例。<br />OpenCV 中的`cv::theRNG()`函数（用于获取默认的**随机数生成器**（**RNG**））是单例实现的示例。 请注意，RNG 类本身不是单例。 |
 
 参考文献：
 
@@ -1991,7 +1997,7 @@ void getPluginsList();
 
 1. 现在，切换到 `mainwindow.cpp` 并在文件顶部任何现有的 `#include` 行之后，添加以下定义：
 
-```
+```cpp
 #define FILTERS_SUBFOLDER "/filter_plugins/"
 ```
 
@@ -2000,18 +2006,17 @@ void getPluginsList();
 ```cpp
 void MainWindow::getPluginsList() 
 { 
-  QDir filtersDir(qApp->applicationDirPath() + 
-    FILTERS_SUBFOLDER); 
+  QDir filtersDir(qApp->applicationDirPath() + FILTERS_SUBFOLDER); 
   QFileInfoList filters = filtersDir.entryInfoList( 
-  QDir::NoDotAndDotDot | 
-  QDir::Files, QDir::Name); 
+                          QDir::NoDotAndDotDot | 
+                          QDir::Files, QDir::Name); 
+  
   foreach(QFileInfo filter, filters) 
   { 
     if(QLibrary::isLibrary(filter.absoluteFilePath())) 
   { 
-    QPluginLoader pluginLoader( 
-        filter.absoluteFilePath(), 
-        this); 
+    QPluginLoader pluginLoader(  filter.absoluteFilePath(), this ); 
+      
     if(dynamic_cast<CvPluginInterface*>( 
         pluginLoader.instance())) 
     { 
@@ -2064,15 +2069,13 @@ qApp->applicationDirPath() + FILTERS_SUBFOLDER
 - 接下来，它使用 `QDir` 类的 `entryInfoList` 函数从文件夹中提取 `QFileInfoList`。`QFileInfoList` 类本质上是一个包含 `QFileInfo` 项的 `QList` 类（`QList<QFileInfo>`），每个 `QFileInfo` 项提供有关磁盘上文件的信息。在这种情况下，每个文件都将是一个插件。
 - 之后，通过在 foreach 循环中迭代文件列表，它检查插件文件夹中的每个文件，以确保只接受插件（库）文件，使用以下函数：
 
-```
-cppCopy code
+```cpp
 QLibrary::isLibrary
 ```
 
 - 通过上一步的检查后的每个库文件，然后检查它是否与我们的插件接口兼容。我们不会让任何库文件被接受为插件，因此我们使用以下代码来实现这一目的：
 
-```
-cppCopy code
+```cpp
 dynamic_cast<CvPluginInterface*>(pluginLoader.instance())
 ```
 
@@ -2103,36 +2106,36 @@ void MainWindow::on_inputImgButton_pressed()
 
 1. 现在，我们将编写 `helpButton` 的代码，它将显示插件中 `description` 函数的结果：
 
-```
-       void MainWindow::on_helpButton_pressed() 
-       { 
-         if(ui->filtersList->currentRow() >= 0)
-        { 
-         QPluginLoader pluginLoader( 
-           qApp->applicationDirPath() +
-           FILTERS_SUBFOLDER +
-           ui->filtersList->currentItem()->text());
-           CvPluginInterface *plugin = 
-             dynamic_cast<CvPluginInterface*>(
-           pluginLoader.instance()); 
-           if(plugin) 
-           { 
-             QMessageBox::information(this, tr("Plugin Description"), 
-                plugin->description()); 
-           } 
-           else 
-           { 
-            QMessageBox::warning(this, tr("Warning"),
-            QString(tr("Make sure plugin %1" " exists and is usable.")) 
-           .arg(ui->filtersList->currentItem()->text())); 
-           }
-        }
-        else
-        { 
-          QMessageBox::warning(this, tr("Warning"), QString(tr("First 
-            select a filter" " plugin from the list.")));
-        } 
-      }
+```cpp
+ void MainWindow::on_helpButton_pressed() 
+ { 
+   if(ui->filtersList->currentRow() >= 0)
+  { 
+   QPluginLoader pluginLoader( 
+     qApp->applicationDirPath() +
+     FILTERS_SUBFOLDER +
+     ui->filtersList->currentItem()->text());
+     CvPluginInterface *plugin = 
+       dynamic_cast<CvPluginInterface*>(
+     pluginLoader.instance()); 
+     if(plugin) 
+     { 
+       QMessageBox::information(this, tr("Plugin Description"), 
+          plugin->description()); 
+     } 
+     else 
+     { 
+      QMessageBox::warning(this, tr("Warning"),
+      QString(tr("Make sure plugin %1" " exists and is usable.")) 
+     .arg(ui->filtersList->currentItem()->text())); 
+     }
+  }
+  else
+  { 
+    QMessageBox::warning(this, tr("Warning"), QString(tr("First 
+      select a filter" " plugin from the list.")));
+  } 
+}
 ```
 
 我们使用 `QPluginLoader` 类来正确地从列表中加载一个插件，然后使用 `instance` 函数获取它的一个实例，最后，我们将通过接口调用插件中的函数。
@@ -2223,11 +2226,11 @@ void MainWindow::on_inputImgButton_pressed()
 
 # 插件加载器和用户
 
-现在，我们将使用上一节中创建的插件。首先，创建一个新的 Qt Widgets Application 项目。我们将其命名为 Plugin_User。项目创建后，首先将 OpenCV 框架添加到 \*.pro 文件中（你已经见过很多次了），然后开始创建类似于下面的用户界面：
+现在，我们将使用上一节中创建的插件。首先，创建一个新的 Qt Widgets Application 项目。我们将其命名为 `Plugin_User`。项目创建后，首先将 OpenCV 框架添加到 \*.pro 文件中（你已经见过很多次了），然后开始创建类似于下面的用户界面：
 
 1. 显然，你需要修改 `mainwindow.ui` 文件，设计它使其看起来像下图，并设置所有对象名称，如下图所示：
 
-![](doc/img/08d03304-663a-49d2-bc89-b68d12bb16fa.png)
+![08d03304-663a-49d2-bc89-b68d12bb16fa](doc/img/08d03304-663a-49d2-bc89-b68d12bb16fa-3949046.png)
 
 确保使用与前图中相同类型的布局。
 

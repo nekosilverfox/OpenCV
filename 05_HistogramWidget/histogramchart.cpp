@@ -92,6 +92,8 @@ void HistogramChart::createAxes()
     QValueAxis *axisX = new QValueAxis();
     axisX->setRange(0, 255);
     axisX->setLabelFormat("%d");
+    // axisX->setLabelsVisible(false);
+
     axisX->setTitleText("Pixel Value");
     axisX->setGridLineVisible(false);
 

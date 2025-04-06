@@ -16,8 +16,6 @@ public:
 
     void updateHistogram(const QImage &image);
 
-
-
 private:
     void createAxes();
     void addChannelSeries(const QVector<float> &data, const QColor &color, const QString &name);
