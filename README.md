@@ -7,6 +7,7 @@
 
 
 
+
 [![License](https://img.shields.io/badge/license-Apache%202.0-brightgreen)](LICENSE)
 ![Qt](https://img.shields.io/badge/Qt-Qt--6-orange)
 ![OpenCV](https://img.shields.io/badge/OpenCV-OpenCV--3-orange)
@@ -17,6 +18,7 @@
 <div align="left">
 <!-- 顶部至此截止 -->
 <!-- SPbSTU 报告起始 -->
+
 
 [toc]
 
@@ -62,40 +64,40 @@
 **本书涵盖的内容**
 
 - **第1章，OpenCV和Qt简介**
-介绍了所有必要的初始化步骤。从在哪里以及如何获取Qt和OpenCV框架开始，本章将描述如何安装、配置，以及确保你的开发环境设置正确。
+    介绍了所有必要的初始化步骤。从在哪里以及如何获取Qt和OpenCV框架开始，本章将描述如何安装、配置，以及确保你的开发环境设置正确。
 
 - **第2章，创建我们的第一个Qt和OpenCV项目**
-带领你通过Qt Creator IDE，我们将使用它开发我们所有的应用程序。在本章中，你将学习如何创建和运行你的应用程序项目。
+    带领你通过Qt Creator IDE，我们将使用它开发我们所有的应用程序。在本章中，你将学习如何创建和运行你的应用程序项目。
 
 - **第3章，创建一个全面的Qt+OpenCV项目**
-通过最常见的功能需求，为一个全面的应用程序，包括样式、国际化、支持各种语言、插件等。通过这个过程，我们将自己创建一个全面的计算机视觉应用程序。
+    通过最常见的功能需求，为一个全面的应用程序，包括样式、国际化、支持各种语言、插件等。通过这个过程，我们将自己创建一个全面的计算机视觉应用程序。
 
 - **第4章，Mat和QImage**
-奠定基础并教你编写计算机视觉应用程序所需的基本概念。在这一章中，你将了解所有关于OpenCV Mat类和Qt QImage类，如何在两个框架之间转换和传递它们，以及更多。
+    奠定基础并教你编写计算机视觉应用程序所需的基本概念。在这一章中，你将了解所有关于OpenCV Mat类和Qt QImage类，如何在两个框架之间转换和传递它们，以及更多。
 
 - **第5章，图形视图框架**
-教你如何使用Qt Graphics View框架及其底层类，以便在应用程序中轻松高效地显示和操作图形。
+    教你如何使用Qt Graphics View框架及其底层类，以便在应用程序中轻松高效地显示和操作图形。
 
 - **第6章，OpenCV中的图像处理**
-带你了解OpenCV框架提供的图像处理功能。你将学习关于变换、过滤器、颜色空间、模板匹配等。
+    带你了解OpenCV框架提供的图像处理功能。你将学习关于变换、过滤器、颜色空间、模板匹配等。
 
 - **第7章，特征和描述符**
-全面讲解从图像中检测关键点，从关键点提取描述符，并将它们相互匹配。在本章中，你将学习各种关键点和描述符提取算法，并使用它们来检测和定位图像中的已知对象。
+    全面讲解从图像中检测关键点，从关键点提取描述符，并将它们相互匹配。在本章中，你将学习各种关键点和描述符提取算法，并使用它们来检测和定位图像中的已知对象。
 
 - **第8章，多线程**
-教你Qt框架提供的所有关于多线程的能力。你将学习关于互斥锁、读写锁、信号量和各种线程同步工具。这章还会教你关于Qt中低级（QThread）和高级（QtConcurrent）多线程技术。
+    教你Qt框架提供的所有关于多线程的能力。你将学习关于互斥锁、读写锁、信号量和各种线程同步工具。这章还会教你关于Qt中低级（QThread）和高级（QtConcurrent）多线程技术。
 
 - **第9章，视频分析**
-覆盖了使用Qt和OpenCV框架正确处理视频的方法。你将学习使用MeanShift和CAMShift算法进行对象跟踪等视频处理功能。本章还包括视频处理的所有基本和必要概念的综合概述，如直方图和反向投影图像。
+    覆盖了使用Qt和OpenCV框架正确处理视频的方法。你将学习使用MeanShift和CAMShift算法进行对象跟踪等视频处理功能。本章还包括视频处理的所有基本和必要概念的综合概述，如直方图和反向投影图像。
 
 - **第10章，调试和测试**
-带你了解Qt Creator IDE的调试功能，以及它是如何配置和设置的。在本章中，你还将学习Qt框架提供的单元测试能力，通过编写示例单元测试，这些测试可以手动或每次项目构建时自动运行。
+    带你了解Qt Creator IDE的调试功能，以及它是如何配置和设置的。在本章中，你还将学习Qt框架提供的单元测试能力，通过编写示例单元测试，这些测试可以手动或每次项目构建时自动运行。
 
 - **第11章，链接和部署**
-教你动态或静态地构建OpenCV和Qt框架。在这一章中，你还将学习在各种平台上部署Qt和OpenCV应用程序。在本章的最后，我们将使用Qt Installer Framework创建一个安装程序。
+    教你动态或静态地构建OpenCV和Qt框架。在这一章中，你还将学习在各种平台上部署Qt和OpenCV应用程序。在本章的最后，我们将使用Qt Installer Framework创建一个安装程序。
 
 - **第12章，Qt Quick应用程序**
-介绍你Qt Quick应用程序和QML语言。在本章中，你将学习QML语言语法，以及如何与Qt Quick Designer一起使用它来为桌面和移动平台创建漂亮的Qt Quick应用程序。你还将学习在本章中整合QML和C++。
+    介绍你Qt Quick应用程序和QML语言。在本章中，你将学习QML语言语法，以及如何与Qt Quick Designer一起使用它来为桌面和移动平台创建漂亮的Qt Quick应用程序。你还将学习在本章中整合QML和C++。
 
 
 
@@ -145,6 +147,7 @@
 - `CodeInText`：表示文中的代码词汇、数据库表名、文件夹名称、文件名、文件扩展名、路径名、虚构的URL、用户输入和Twitter句柄。这里有一个例子："`QApplication`类是负责控制应用程序的控制流、设置等的主类。"
 
 - 代码块如下所示：
+
     ```cpp
     #include "mainwindow.h"
     #include <QApplication>
@@ -158,6 +161,7 @@
     ```
 
 - 当我们希望把你的注意力吸引到代码块的特定部分时，相关的行或项将以**加粗**形式展示：
+
     ```cpp
     #include "mainwindow.h"
     #include <QApplication>
@@ -171,6 +175,7 @@
     ```
 
 - 任何命令行输入或输出如下所写：
+
     ```
     binarycreator -p packages -c config.xml myinstaller
     ```
@@ -656,17 +661,17 @@ Qt 窗口共有 3 种不同类型的条（实际上，一般来说是 Windows）
 ---
 
 - **显示小部件**：可用于显示输出数据，如数字、文本、图片、日期等：
-  - **标签**：可用于显示数字、文本、图片或电影（此小部件对应的 Qt 类称为 `QLabel`）。
-  - **文本浏览器**：与文本编辑小部件几乎相同，但增加了在链接之间导航的功能（此小部件对应的 Qt 类称为 `QTextBrowser`）。
-  - **图形视图**：可用于显示图形场景的内容（此小部件对应的 Qt 类称为 `QGraphicsView`）。
+    - **标签**：可用于显示数字、文本、图片或电影（此小部件对应的 Qt 类称为 `QLabel`）。
+    - **文本浏览器**：与文本编辑小部件几乎相同，但增加了在链接之间导航的功能（此小部件对应的 Qt 类称为 `QTextBrowser`）。
+    - **图形视图**：可用于显示图形场景的内容（此小部件对应的 Qt 类称为 `QGraphicsView`）。
 
 我们在本书中将会使用到的最重要的小部件可能是图形场景（或 `QGraphicsScene`），并且将在[第5章](#23154d9b-43b1-411a-874a-d82e2a904927.xhtml)，*图形视图框架*中进行介绍。
 
 - **日历小部件**：可用于从月历中查看和选择日期（此小部件对应的 Qt 类称为 `QCalendarWidget`）。
-  - **LCD数字**：可用于在类似LCD的显示屏上显示数字（此小部件对应的 Qt 类称为 `QLCDNumber`）。
-  - **进度条**：可用于显示垂直或水平的进度指示器（此小部件对应的 Qt 类称为 `QProgressBar`）。
-  - **水平/垂直线**：可用于绘制简单的垂直或水平线。特别适用于不同小部件组之间的分隔线。
-  - **OpenGL小部件**：此类可用作渲染OpenGL输出的表面（此小部件对应的 Qt 类称为 `QOpenGLWidget`）。
+    - **LCD数字**：可用于在类似LCD的显示屏上显示数字（此小部件对应的 Qt 类称为 `QLCDNumber`）。
+    - **进度条**：可用于显示垂直或水平的进度指示器（此小部件对应的 Qt 类称为 `QProgressBar`）。
+    - **水平/垂直线**：可用于绘制简单的垂直或水平线。特别适用于不同小部件组之间的分隔线。
+    - **OpenGL小部件**：此类可用作渲染OpenGL输出的表面（此小部件对应的 Qt 类称为 `QOpenGLWidget`）。
 
 请注意，OpenGL是计算机图形学中一个完全独立和高级的主题，完全超出了本书的范围；然而，如前所述，了解Qt中存在的工具和小部件对于可能的进一步学习是一个好主意。
 
@@ -715,8 +720,8 @@ Qt 窗口共有 3 种不同类型的条（实际上，一般来说是 Windows）
 4.  添加一个组框，然后添加两个单选按钮，类似于上图所示。
 5.  接下来，添加另一个水平布局，然后在其中添加`Label`，`Line Edit`和`Push Button`。 这将是在复选框正上方的底部看到的布局。
 
-6. 最后，在窗口中添加一个复选框。这是底部的复选框。
-7. 现在，根据前面的图片更改窗口上所有小部件的文本。你的 UI 几乎准备好了。你现在可以通过点击屏幕左下角的运行按钮来尝试运行它。确保你没有按带有错误的运行按钮。这是按钮：
+6.  最后，在窗口中添加一个复选框。这是底部的复选框。
+7.  现在，根据前面的图片更改窗口上所有小部件的文本。你的 UI 几乎准备好了。你现在可以通过点击屏幕左下角的运行按钮来尝试运行它。确保你没有按带有错误的运行按钮。这是按钮：
 
 ![](doc/img/b123b1f9-9824-41bf-9842-6e16c91cdb9d.png)
 
@@ -1569,7 +1574,6 @@ QPushButton:!hover, QRadioButton:!hover, QCheckBox:!hover
     > ```properties
     > C:\Qt\Qt5.9.1\5.9.1\msvc2015\bin\lrelease.exe Hello_Qt_OpenCV.pro 
     > ```
-    >
 
     
 
@@ -1792,12 +1796,12 @@ Q_DECLARE_INTERFACE(CvPluginInterface, CVPLUGININTERFACE_IID)  // 宏将我们�
 >     
 >     进程已结束，退出代码为 0
 >     ```
->     
->在这个例子中，`main`函数中我们创建了一个`Derived`类型的对象，但是用`Base`类型的指针来引用它。当我们删除这个对象时，由于`Base`的析构函数不是虚的，所以只有`Base`的析构函数被调用，`Derived`的析构函数不会被执行。这意味着如果`Derived`类中有特殊的资源释放逻辑（比如删除动态分配的内存），那么这些逻辑不会被执行，可能会导致资源泄露。
->     
->要修正这个问题，我们需要将`Base`类的析构函数声明为虚：
->     
->```cpp
+>
+>     在这个例子中，`main`函数中我们创建了一个`Derived`类型的对象，但是用`Base`类型的指针来引用它。当我们删除这个对象时，由于`Base`的析构函数不是虚的，所以只有`Base`的析构函数被调用，`Derived`的析构函数不会被执行。这意味着如果`Derived`类中有特殊的资源释放逻辑（比如删除动态分配的内存），那么这些逻辑不会被执行，可能会导致资源泄露。
+>
+>     要修正这个问题，我们需要将`Base`类的析构函数声明为虚：
+>
+>     ```cpp
 >     class Base {
 >     public:
 >         Base() { std::cout << "Base Constructor\n"; }
@@ -1813,7 +1817,7 @@ Q_DECLARE_INTERFACE(CvPluginInterface, CVPLUGININTERFACE_IID)  // 宏将我们�
 >     
 >     进程已结束，退出代码为 0
 >     ```
->     
+>
 >     这样，当我们通过基类指针删除派生类对象时，析构函数的调用会遵循动态绑定，即先调用`Derived`的析构函数，然后调用`Base`的析构函数（构造-爸爸盖房子，析构-孩子拆房子），从而确保所有资源都被正确管理和释放。
 >
 > 2. **多态**的重要性：在C++中，多态允许我们通过基类的指针或引用来调用派生类的方法。如果基类将要被用作多态基类（即通过基类的指针或引用来访问派生类对象），则必须为这个基类提供虚析构函数。这样做确保了当通过基类的指针删除派生类对象时，能够正确地调用派生类的析构函数，避免内存泄漏。
@@ -2092,7 +2096,6 @@ public:
 
       - 在每一步，如果有问题，使用 QMessageBox 向用户显示有用的信息。此外，如果列表为空，意味着没有可用的插件，窗口上的小部件被禁用，应用程序不可用。
 
-
 1. 不要忘记从 MainWindow 构造函数中调用此函数，紧跟在 `setupUi` 调用之后。
 2. 我们还需要为 `inputImgButton` 编写代码，该按钮用于打开图像文件。代码如下：
 
@@ -2200,6 +2203,7 @@ void MainWindow::showPluginDescription()
     尝试创建另一个名为 `gaussian_filter_plugin` 的插件，完全遵循 `median_filter_plugin` 的创建流程，但这次需使用[第2章](#9009a91a-b569-44fc-b9b4-a5f6a8421ba8.xhtml)《创建首个Qt与OpenCV项目》中介绍的 `gaussianBlur` 函数。构建后将其放入 `filter_plugins` 文件夹并重新运行 `Plugin_User`。你还可以放入随机库文件（及其他非库文件）来测试应用程序在这些场景下的表现。
 
     需特别注意：**切勿将Debug模式构建的插件用于Release模式构建的应用程序，反之亦然**。插件加载还有其他重要规则：  
+
     - 高版本Qt构建的插件不能用于低版本Qt构建的应用程序  
     - 低主版本号Qt构建的插件不能用于高主版本号Qt构建的应用程序  
 
@@ -2235,13 +2239,16 @@ void MainWindow::showPluginDescription()
 基础项目将包含以下增强功能：
 
 - 能加载/显示带GUI插件的 `MainWindow` 类
+
 - 扩展版插件接口（在原有基础上新增）：
-  ```cpp
-  QString getTitle() const;          // 获取插件标题
-  QString getHelp() const;           // 获取帮助信息
-  QWidget* getGUI() const;           // 获取插件专属GUI容器
-  int getType() const;               // 判断插件类型（图像处理型/GUI信息型）
-  void processImage(cv::Mat& in, cv::Mat& out); // 图像处理接口
+
+    ```cpp
+    QString getTitle() const;          // 获取插件标题
+    QString getHelp() const;           // 获取帮助信息
+    QWidget* getGUI() const;           // 获取插件专属GUI容器
+    int getType() const;               // 判断插件类型（图像处理型/GUI信息型）
+    void processImage(cv::Mat& in, cv::Mat& out); // 图像处理接口
+    ```
 
 
 
@@ -2395,10 +2402,12 @@ Mat roi(image, Rect(25,25,50,50));
 ![image](doc/img/e93b4977-be31-4624-ad9a-b101416804a9.png)
 
 ### 坐标系说明
+
 - **原点位置**：图像左上角坐标为 (0,0)
 - **右下角坐标**：若图像宽度为 `cols`，高度为 `rows`，则右下角坐标为 (`cols-1`, `rows-1`)
 
 ### ROI 操作注意事项
+
 使用 `Rect` 类创建 ROI 时需提供左上角坐标及宽度/高度。注意：**ROI 是浅拷贝**，修改 ROI 内容将直接影响原图像。如需独立副本需使用 `clone()` 方法：
 
 ```cpp
@@ -2493,5 +2502,139 @@ int y = offset.y;
 
 - **`at`**：这是一个模板函数，可用于访问 `Mat` 类中的元素。特别适用于访问图像中的元素（像素）。例如，假设我们有一个标准三通道彩色图像存储在名为 `image` 的 `Mat` 类中（类型为 `CV_8UC(3)`），则可通过以下代码访问位置 (X,Y) 的像素并设置其颜色值为 C：
 
+    ```
+    image.at<Vec3b>(X,Y) = C;
+    ```
+
+    
+
+OpenCV 提供了 `Vec`（向量）类及其变体以简化数据访问和处理。您可以通过以下 `typedef` 创建自定义命名的 `Vec` 类型：
+
+```
+typedef Vec<Type, C> NewType;
+```
+
+例如，在前述代码中，您可以自定义一个 3 字节向量（如 `QCvVec3B`）替代 `Vec3b`：
+
+```
+typedef Vec<quint8,3> QCvVec3B;
+```
+
+您也可以直接使用 OpenCV 预定义的以下 `Vec` 类型（配合 `at` 函数使用）：
+
 ```cpp
-image.at<Vec3b>(X,Y) = C;
+typedef Vec<uchar, 2> Vec2b;  
+typedef Vec<uchar, 3> Vec3b;  
+typedef Vec<uchar, 4> Vec4b;  
+typedef Vec<short, 2> Vec2s;  
+typedef Vec<short, 3> Vec3s;  
+typedef Vec<short, 4> Vec4s;  
+typedef Vec<ushort, 2> Vec2w;  
+typedef Vec<ushort, 3> Vec3w;  
+typedef Vec<ushort, 4> Vec4w;  
+typedef Vec<int, 2> Vec2i;  
+typedef Vec<int, 3> Vec3i;  
+typedef Vec<int, 4> Vec4i;  
+typedef Vec<int, 6> Vec6i;  
+typedef Vec<int, 8> Vec8i;  
+typedef Vec<float, 2> Vec2f;  
+typedef Vec<float, 3> Vec3f;  
+typedef Vec<float, 4> Vec4f;  
+typedef Vec<float, 6> Vec6f;  
+typedef Vec<double, 2> Vec2d;  
+typedef Vec<double, 3> Vec3d;  
+typedef Vec<double, 4> Vec4d;  
+typedef Vec<double, 6> Vec6d;
+```
+
+- **`begin` 和 `end`**：可通过类似 C++ STL 的迭代器访问 `Mat` 类中的元素。
+- **`forEach`**：可并行地对 `Mat` 类的所有元素运行指定函数。需提供函数对象、函数指针或 lambda 表达式。
+
+> **注意**：lambda 表达式仅适用于 C++11 及更高版本。若尚未升级，这是迁移到 C++11+ 的重要理由。
+
+以下三个示例代码使用前述访问方法实现相同目标：将图像每个像素值除以 5 使其变暗。
+
+**方法 1**：使用 `at` 函数：
+
+```cpp
+for(int i=0; i<image.rows; i++) 
+{ 
+    for(int j=0; j<image.cols; j++) 
+    { 
+        image.at<Vec3b>(i, j) /= 5; 
+    } 
+} 
+```
+
+**方法 2**：使用 STL 风格迭代器（`begin` 和 `end` 函数）：
+
+```
+MatIterator_<Vec3b> it_begin = image.begin<Vec3b>(); 
+MatIterator_<Vec3b> it_end = image.end<Vec3b>(); 
+for( ; it_begin != it_end; it_begin++) 
+{ 
+    *it_begin /= 5; 
+} 
+```
+
+**方法 3**：使用 `forEach` 函数（配合 lambda 表达式）：
+
+```
+image.forEach<Vec3b>([](Vec3b &p, const int *) 
+{ 
+    p /= 5; 
+});
+```
+
+以下是三种代码处理后生成的相同暗化效果图像：
+
+![](doc/img/fa9341fd-e421-4105-8629-82638aba89c6.png)
+
+如您所见，`Mat` 类包含大量方法，它是 OpenCV 图像处理的核心基础结构。除了已介绍的属性和函数外，以下函数也需要掌握：
+
+- **`adjustROI`**：用于调整子矩阵（严格来说是 ROI 矩阵）的尺寸。
+- **`clone`**：广泛用于创建 `Mat` 类的深拷贝。典型场景：处理图像时保留原始副本用于后续对比。
+- **`convertTo`**：修改 `Mat` 类的数据类型，可选进行数值缩放。
+- **`copyTo`**：复制全部或部分图像到另一个 `Mat` 类。
+- **`ptr`**：获取指针以访问矩阵数据。通过重载版本可获取特定行或位置的指针。
+- **`release`**：在 `Mat` 析构函数中调用，负责内存清理。
+- **`reserve`**：为指定行数预分配内存。
+- **`reserveBuffer`**：类似 `reserve`，但按字节数预分配内存。
+- **`reshape`**：改变通道数以重构矩阵数据。例如将单通道（元素为 `Vec3b`）转为三通道矩阵，此时行数会乘3。后续可通过转置调整行列关系。
+- **`resize`**：修改矩阵的行数。
+- **`setTo`**：将全部或部分元素设为指定值。
+
+`Mat` 类还支持以下矩阵运算方法：
+
+- **`cross`**：计算两个三元矩阵的叉积
+- **`diag`**：提取矩阵对角线
+- **`dot`**：计算两个矩阵的点积
+- **`eye`**（静态函数）：创建单位矩阵
+- **`inv`**：生成逆矩阵
+- **`mul`**：执行矩阵元素级乘/除
+- **`ones`**（静态函数）：创建全1矩阵
+- **`t`**：生成转置矩阵。注意图像转置等效于镜像+90度旋转（见下图）
+- **`zeros`**：创建全零矩阵（即纯黑图像）
+
+下图中左侧为原始图像，右侧为转置结果（左右互为转置关系），展示了 `t` 函数的效果：
+
+![](doc/img/b5a538a1-76e3-4187-a37e-b3c45ccf6260.png)
+
+> **重要说明**：`Mat` 类支持标准算术运算。例如前文通过遍历像素实现暗化效果的操作，可直接简化为：
+
+```cpp
+Mat darkerImage = image / 5;  // 或 image * 0.2
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
