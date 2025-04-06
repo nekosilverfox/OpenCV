@@ -2628,13 +2628,159 @@ Mat darkerImage = image / 5;  // 或 image * 0.2
 
 
 
+## Mat\_\<Tp\> 类
+
+`Mat_<Tp>` 类是 `Mat` 类的模板子类，其成员与 `Mat` 完全一致，但在**编译时已知矩阵类型**（或图像元素类型）的场景下非常有用。相较于 `Mat` 的 `at` 函数，它提供了更友好（更易读）的访问方式。示例如下：
+
+```cpp
+Mat_<Vec3b> imageCopy(image); // image 是 Mat 类型
+imageCopy(10, 10) = Vec3b(0,0,0); // imageCopy 可使用 () 运算符
+```
+
+要注意类型匹配，可以将 `Mat_<Tp>` 类传递给任何接受 `Mat` 类的函数而不会出错。
 
 
 
+## Matx<Tp, m, n> 类
+
+`Matx` 类专用于**小型矩阵**（编译时已知类型、宽度和高度）。其方法与 `Mat` 类似，支持矩阵运算。但通常建议使用 `Mat` 类代替 `Matx`，因其提供更高的灵活性和功能。
 
 
 
+## UMat 类
+
+`UMat` 类是 OpenCV 3.0+ 新增的类（类似 `Mat`）。其优势取决于运行平台是否支持 OpenCL 加速层。简而言之：若平台支持 OpenCL，使用 `UMat` 会调用底层 OpenCL 指令（需函数已实现相关支持），从而提升计算性能；否则 `UMat` 会自动回退为 `Mat` 并调用 CPU 实现。这种统一抽象机制（"U" 即 Unified）简化了高性能 OpenCL 的使用，不同于旧版 OpenCV 需通过 `ocl` 命名空间单独调用。
+
+在支持 OpenCL 的 CPU 密集型函数中，建议优先使用 `UMat`。需注意 `Mat` 与 `UMat` 的显式转换方法：
+
+```
+Mat::getUMat(access_flag)  // 将 Mat 转为 UMat
+UMat::getMat(access_flag)  // 将 UMat 转为 Mat
+```
+
+访问标志 `access_flag` 可选值：
+
+- `ACCESS_READ`
+- `ACCESS_WRITE`
+- `ACCESS_RW`
+- `ACCESS_FAST`
+
+本书将尽量交替使用 `Mat` 和 `UMat`。随着 OpenCL 支持的扩展，熟悉 `UMat` 的使用将带来显著优势。
 
 
 
+## InputArray、OutputArray、InputOutputArray
+
+您会注意到大多数 OpenCV 函数接收这些参数类型而非直接使用 `Mat` 及其类似类型。这些是**代理数据类型**，用于提升可读性和数据类型兼容性。这意味着您可以将以下任一类型传递给接受这些参数的 OpenCV 函数：
+
+-   Mat
+-   Mat\_\<T\>
+-   Matx\<T, m, n\>
+-   std::vector\<T\>
+-   std::vector\<std::vector\<T\> \>
+-   std::vector\<Mat\>
+-   std::vector\<Mat\_\<T\> \>
+-   UMat
+-   std::vector\<UMat\>
+-   double
+
+注意：OpenCV 将标准 C++ 向量（`std::vector`）视为 `Mat` 类处理，因其底层数据结构具有相似性。
+
+> **重要原则**：永远不要显式创建 `InputArray`、`OutputArray` 或 `InputOutputArray`。直接传递上述支持的类型即可正常工作。
+
+
+
+## 使用 OpenCV 读取图像
+
+了解 `Mat` 类后，我们可学习如何读取图像并用其填充 `Mat` 类以便后续处理。如先前章节所见，`imread` 函数可用于从磁盘读取图像：
+
+```cpp
+Mat image = imread("c:/dev/test.jpg", IMREAD_GRAYSCALE | IMREAD_IGNORE_ORIENTATION);
+```
+
+`imread` 接收两个参数：
+
+- `std::string` 类型文件路径
+- `ImreadModes` 枚举标志
+
+
+
+若读取失败，返回空 `Mat` 类（`data == NULL`）；成功则返回包含图像像素的 `Mat` 类，类型和色彩模式由第二个参数指定。支持读取以下图像格式：
+
+- Windows 位图：`*.bmp`, `*.dib`
+- JPEG 文件：`*.jpeg`, `*.jpg`, `*.jpe`
+- JPEG 2000 文件：`*.jp2`
+- 便携式网络图形：`*.png`
+- WebP：`*.webp`
+- 便携式图像格式：`*.pbm`, `*.pgm`, `*.ppm`, `*.pxm`, `*.pnm`
+- Sun 光栅图：`*.sr`, `*.ras`
+- TIFF 文件：`*.tiff`, `*.tif`
+- OpenEXR 图像文件：`*.exr`
+- Radiance HDR：`*.hdr`, `*.pic`
+- GDAL 支持的栅格/矢量地理空间数据
+
+
+
+示例中使用的标志组合：
+
+```
+IMREAD_GRAYSCALE | IMREAD_IGNORE_ORIENTATION
+```
+
+表示以灰度模式加载图像，并忽略 EXIF 中的方向信息。
+
+
+
+OpenCV 还支持读取多页图像文件，需使用 `imreadmulti` 函数：
+
+```
+std::vector<Mat> multiplePages; 
+bool success = imreadmulti("c:/dev/multi-page.tif", multiplePages,
+    IMREAD_COLOR);
+```
+
+
+
+此外，可通过 `imdecode` 从内存缓冲区读取图像（适用于非磁盘存储或网络流场景）：
+
+```
+// 伪代码示例：从内存缓冲区读取
+std::vector<uchar> buffer = ...; // 图像数据缓冲区
+Mat image = imdecode(buffer, IMREAD_COLOR);
+```
+
+`imdecode` 用法与 `imread` 类似，区别在于需传入数据缓冲区而非文件路径。
+
+
+
+## 使用 OpenCV 写入图像
+
+OpenCV 的 `imwrite` 函数可用于将图像写入磁盘文件。该函数通过文件扩展名确定输出格式。要自定义压缩率等参数，需使用 `ImwriteFlags`、`ImwritePNGFlags` 等标志。以下示例演示如何将图像写入 JPG 文件并启用渐进模式（低质量/高压缩率）：
+
+```cpp
+std::vector<int> params; 
+params.push_back(IMWRITE_JPEG_QUALITY);  // 设置 JPG 质量
+params.push_back(20);                     // 质量值 (0-100)
+params.push_back(IMWRITE_JPEG_PROGRESSIVE); // 启用渐进模式
+params.push_back(1);                      // 1=启用，0=禁用
+imwrite("c:/dev/output.jpg", image, params); 
+```
+
+若使用默认设置，可省略参数直接写入：
+
+```
+imwrite("c:/dev/output.jpg", image); 
+```
+
+`imwrite` 支持的文件格式与 `imread` 函数相同（参见前文列表）。
+
+除 `imwrite` 外，OpenCV 还支持通过 `imencode` 将图像写入内存缓冲区（适用于网络传输等场景，无需保存文件）。用法与 `imwrite` 类似，但需提供数据缓冲区和格式扩展名：
+
+```
+std::vector<uchar> buffer; 
+std::vector<int> params; 
+bool success = imencode(".jpg", image, buffer, params); 
+```
+
+> **注意**：因无文件名指定格式，`imencode` 需通过扩展名参数（如 `.jpg`）确定输出格式。
 
