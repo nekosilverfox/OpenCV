@@ -13,10 +13,25 @@ SOURCES += \
     mainwindow.cpp
 
 HEADERS += \
+    ../CvPluginInterface/CvPluginInterface.h \
     mainwindow.h
 
 FORMS += \
     mainwindow.ui
+
+unix: macx {
+    # 其他依赖库
+    INCLUDEPATH += /opt/homebrew/include
+    LIBS += -L/opt/homebrew/lib
+    LIBS += -L/usr/local/lib
+
+    # OpenCV
+    INCLUDEPATH += /usr/local/include/opencv4
+    LIBS += -L/opt/homebrew/opt/opencv/lib
+    LIBS += -lopencv_world
+    INCLUDEPATH += /opt/homebrew/opt/opencv/include/opencv4
+    # LIBS += -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs # 通过 brew 安装的
+}
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

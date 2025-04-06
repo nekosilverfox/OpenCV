@@ -17,6 +17,13 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void selectImage();
+    void showPluginDescription();
+    void useFilterOnImage();
+
+private:
+    void getPluginsList();
+
 private:
     Ui::MainWindow *ui;
 };

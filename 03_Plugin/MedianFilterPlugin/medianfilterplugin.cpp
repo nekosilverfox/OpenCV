@@ -18,5 +18,5 @@ QString MedianFilterPlugin::description()
 
 void MedianFilterPlugin::processImage(const cv::Mat &inputImage, cv::Mat &outputImage)
 {
-    cv::medianBlur(inputImage, outputImage, 5);
+    cv::medianBlur(inputImage, outputImage, 10);
 }
