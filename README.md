@@ -3460,9 +3460,109 @@ Qt框架中有一个专注于简化图形处理的**图形视图框架(Graphics 
 
     
 
+## 场景类`QGraphicsScene`
+
+该类提供操作多个图形项（`QGraphicsItem`）所需的几乎所有方法，尽管我们在前例中仅将其用于单个`QGraphicsPixmapItem`。本节将回顾该类的部分核心函数。如前所述，我们主要聚焦用例所需属性和方法（完整方法集虽重要但不符本书目标）。跳过`QGraphicsScene`构造函数（仅用于设置场景尺寸），其余关键方法如下（部分方法附示例代码，可使用本章创建的`Graphics_Viewer`项目测试）：
+
+- **`addEllipse`、`addLine`、`addRect`、`addPolygon`函数**：
+  
+  如名所示，这些函数用于向场景添加基础几何图形。部分提供重载版本简化参数输入。每个函数均返回对应`QGraphicsItem`子类**实例指针**（如下），可用于后续修改/删除操作：
+  
+  - `QGraphicsEllipseItem`
+  - `QGraphicsLineItem`
+  - `QGraphicsRectItem`
+  - `QGraphicsPolygonItem`
+  
+  以下是一个示例：
+  
+  ```cpp
+  // 在场景中绘制一个椭圆
+  scene.addEllipse(-100.0, 100.0, 200.0, 100.0, 
+          QPen(QBrush(Qt::SolidPattern), 2.0),  //实线边框（SolidPattern），线宽为 2 像素
+          QBrush(Qt::Dense2Pattern)); // 密集点状填充（Dense2Pattern）
+  
+  
+  scene.addLine(-200.0, 200, +200, 200, 
+        QPen(QBrush(Qt::SolidPattern), 5.0)); 
+  
+  scene.addRect(-150, 150, 300, 140);   // 在场景中绘制一个矩形
+  
+  // 定义多边形的顶点坐标
+  QVector<QPoint> points; 
+  points.append(QPoint(150, 250)); 
+  points.append(QPoint(250, 250)); 
+  points.append(QPoint(165, 280)); 
+  points.append(QPoint(150, 250)); 
+  scene.addPolygon(QPolygon(points)); // 绘制多边形
+  ```
+  
+  执行结果：
+  
+  ![](doc/img/6011fe12-5460-4f62-bb9f-87e21929ade9.png)
+  
+  - **`addPath`函数**
+    
+    用于将`QPainterPath`（记录绘制操作）添加到场景中，需指定`QPen`（画笔）和`QBrush`（画刷）。返回指向新创建的`QGraphicsPathItem`的指针。
+    
+  - **`addSimpleText`与`addText`函数**：  
+    - `addSimpleText`添加纯文本，返回`QGraphicsSimpleTextItem`指针
+    - `addText`添加富文本，返回`QGraphicsTextItem`指针
+  
+  - **`addPixmap`函数**：已在前例使用，用于添加图像到场景，返回`QGraphicsPixmapItem`指针。
+    
+  - **`addItem`函数**：通用方法，接受任何`QGraphicsItem`子类并添加到场景（前例已演示）。
+    
+  - **`addWidget`函数**：可将Qt部件嵌入场景（除特殊部件如使用`Qt::WA_PaintOnScreen`标志或依赖外部库的部件）。此功能为创建交互式场景提供强大支持，示例代码：
+    
+    ```cpp
+    // 在场景中添加按钮
+    QPushButton *btn = new QPushButton("Process Image");
+    QGraphicsProxyWidget *proxy = scene.addWidget(btn);
+    proxy->setGeometry(QRectF(-200.0, -200, 400, 100.0)); // 设置代理对象在场景中的 位置 和 大小。
+    
+    // 连接按钮信号
+    connect(btn, &QPushButton::clicked, this, [](){
+        qDebug() << "Image processing triggered";
+    });
+    ```
+  
+
+​	代码简单地添加了一个按钮，并将其连接到槽。每当场景中的此按钮被按下时，函数就会被调用。这与向窗口添加按钮的行为完全相同
 
 
 
+- `setBackgroundBrush`、`backgroundBrush`、`setForegroundBrush` 和 `foregroundBrush` 函数允许访问负责绘制场景背景和前景的 `QBrush` 类。
+- `font` 和 `setFont` 函数可用于获取或设置 `QFont` 类，以确定场景中使用的字体。
+- 当我们需要定义最小尺寸来决定一个项是否有资格被绘制（渲染）时，`minimumRenderSize` 和 `setMinimumRenderSize` 函数非常有用。
+
+- `sceneRect` 和 `setSceneRect` 函数可用于指定场景的边界矩形。这基本上意味着场景的宽度和高度，加上其在坐标系中的位置。需要注意的是，如果未调用 `setSceneRect`，或在 `QGraphicsScene` 的构造函数中未设置矩形，则调用 `sceneRect` 将始终返回可以覆盖场景中所有添加项的最大矩形。最好始终手动设置场景矩形（使用 `setSceneRect`），并根据场景变化等需求重新设置。
+- `stickyFocus` 和 `setStickyFocus` 函数可用于启用或禁用场景的“粘性焦点”模式。如果启用粘性焦点，点击场景中的空白区域不会对已聚焦的项产生任何影响；否则，焦点将被清除，且所选项将不再被选中。
+- `collidingItems` 是一个非常有趣的函数，可用于简单判断一个项是否与其他项共享其区域的某部分（即碰撞）。你需要传递一个 `QGraphicsItem` 指针和 `Qt::ItemSelectionMode`，然后会得到一个包含该项碰撞的 `QGraphicsItem` 实例的 `QList`。
+- `createItemGroup` 和 `destroyItemGroup` 函数可用于创建和删除 `QGraphicsItemGroup` 类的实例。`QGraphicsItemGroup` 本质上是另一个 `QGraphicsItem` 子类（如 `QGraphicsLineItem` 等），可用于将一组图形项分组并表示为单个项。
+- `hasFocus`、`setFocus`、`focusItem` 和 `setFocusItem` 函数均用于处理图形场景中当前聚焦的项。
+- `width` 和 `height` 函数返回与 `sceneRect.width()` 和 `sceneRect.height()` 相同的值，可用于获取场景的宽度和高度。需要注意的是，这些函数返回的值类型为 `qreal`（默认等同于 `double`），而非整数，因为场景坐标并非基于像素。除非通过视图绘制场景，否则场景上的所有内容都被视为逻辑和非可视的，这与可视化的 `QGraphicsView` 类领域相反。
+- `invalidate` 函数在某些情况下等同于 `update()`，可用于请求完全或部分重绘场景。类似于刷新功能。
+
+- `itemAt` 函数可用于获取场景中某个位置的 `QGraphicsItem` 指针。
+- `items` 函数返回已添加到场景中的项列表，即 `QGraphicsItem` 的 `QList`。
+- `itemsBoundingRect` 可用于获取 `QRectF` 类，或包含场景上所有项的最小矩形。此函数在需要将所有项置于视图中或执行类似操作时特别有用。
+- `mouseGrabberItem` 可用于获取当前被点击但未释放鼠标按钮的项。此函数返回一个 `QGraphicsItem` 指针，通过它我们可以轻松为场景添加“拖拽移动”等功能。
+- `removeItem` 函数可用于从场景中移除项。此函数不会删除项，调用方需负责必要的清理工作。
+- `render` 函数可用于在 `QPaintDevice` 上渲染场景。这意味着你可以使用 `QPainter` 类（如[第4章](#f36fb509-ba51-4ed5-8896-8ee2c5027910.xhtml) *Mat与QImage* 中所学）通过将绘制器类指针传递给此函数，在 `QImage`、`QPrinter` 等类上绘制场景。可选地，你可以将场景的一部分渲染到 `QPaintDevice` 渲染目标类的一部分，并处理宽高比。
+- `selectedItems`、`selectionArea` 和 `setSelectionArea` 函数结合使用时，可帮助处理单个或多个项的选择。通过提供 `Qt::ItemSelectionMode` 枚举，我们可以基于完全在框中选择项或仅部分选择等方式选择项。我们还可以为此函数提供 `Qt::ItemSelectionOperation` 枚举条目，使选择为累加或替换所有先前选定的项。
+- `sendEvent` 函数可用于向场景中的项发送 `QEvent` 类（或其子类）。
+- `style` 和 `setStyle` 函数用于设置和获取场景的样式。
+- `update` 函数可用于重绘部分或全部场景。此函数最好与 `QGraphicsScene` 类在场景视觉部分发生变化时发出的变更信号结合使用。
+- `views` 函数可用于获取包含用于显示（或查看）此场景的 `QGraphicsView` 控件的 `QList` 类。
+
+除了上述现有方法，`QGraphicsScene` 还提供了若干虚函数，可用于进一步自定义和增强 `QGraphicsScene` 类的行为和外观。因此，与任何其他类似 C++ 类一样，你需要创建 `QGraphicsScene` 的子类并简单实现这些虚函数。实际上，这是使用 `QGraphicsScene` 类的最佳方式，能为新创建的子类提供极大的灵活性：
+
+- 可重写 `dragEnterEvent`、`dragLeaveEvent`、`dragMoveEvent` 和 `dropEvent` 函数，为场景添加拖放功能。注意这与我们之前在示例中实现图像拖放到窗口的行为非常相似。每个事件都提供了足够的信息和参数来处理整个拖放过程。
+- 如果需要为整个场景添加自定义背景或前景，则应重写 `drawBackground` 和 `drawForeground` 函数。当然，对于简单的背景或前景绘制或着色任务，可以直接调用 `setBackgroundBrush` 和 `setForegroundBrush` 函数，而无需重写这些函数。
+- 可使用 `mouseDoubleClickEvent`、`mouseMoveEvent`、`mousePressEvent`、`mouseReleaseEvent` 和 `wheelEvent` 函数处理场景中的不同鼠标事件。例如，本章稍后将在 `Computer_Vision` 项目中为场景添加缩放功能时使用 `wheelEvent`。
+- 可重写 `event` 函数以处理场景接收的所有事件。此函数主要负责将事件分派给对应的处理函数，但也可用于处理自定义事件或没有便捷处理函数的事件（如前面提到的所有事件）。
+
+正如你至今所学的所有类（无论是 Qt 还是 OpenCV 中的），本书中提供的方法、属性和功能列表不应被视为类的完整功能清单。始终建议通过框架文档学习新的函数和属性。不过，本书的描述力求简洁易懂，尤其从计算机视觉开发者的视角出发。
 
 
 
