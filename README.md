@@ -3189,5 +3189,116 @@ ui->label->setPixmap(QPixmap::fromImage(image.rgbSwapped()));
 
 
 
+## `QImageReader` 和 `QImageWriter`类
 
+`QImageReader` 和 `QImageWriter`类可用于对图像读写过程进行更多控制。它们支持与`QImage`和`QPixmap`相同的文件类型，但提供了更大的灵活性：在图像读写过程出现问题时能够提供错误信息，且使用这些类时还可以设置和获取更多图像属性。正如后续章节将看到的，我们将在综合计算机视觉应用中使用这些同类类来实现更好的图像读写控制。目前我们仅作简要介绍，接下来继续下一节内容。
+
+
+
+## `QPainter`类
+
+`QPainter`类可用于在`QPaintDevice`类的任何Qt子类上进行绘制（本质上是绘画）。这意味着什么？基本上包括所有具有可视界面并能进行绘制的Qt部件。例如，`QPainter`可用于在`QWidget`类（即所有现有和自定义的Qt部件）、`QImage`、`QPixmap`及其他许多Qt类上绘制。可通过Qt Creator帮助模式查看`QPaintDevice`类文档页面，获取继承`QPaintDevice`的完整Qt类列表。`QPainter`拥有众多以`draw`开头的函数，完整介绍需要单独章节，但我们将通过`QWidget`和`QImage`的基础示例演示其用法。本质上，相同逻辑适用于所有可与`QPainter`配合使用的类。
+
+如前所述，可通过自定义Qt部件并使用`QPainter`创建（或绘制）其视觉界面。这实际上是创建新Qt部件的常用方法之一。我们通过创建显示闪烁圆形的自定义部件来示例说明：
+
+1. 新建名为**Painter_Test**的Qt Widgets Application项目。
+2. 通过主菜单选择**File / New File or Project**。
+3. 在新建窗口中选择**C++**和**C++ Class**，点击**Choose**。
+4. 在弹出窗口中设置类名为`QBlinkingWidget`，基类选择`QWidget`，确保勾选**Include QWidget**复选框，其余选项保持默认：
+
+![](doc/img/3faf4dfc-97df-44ff-9152-8dd5ac8b407d.png)
+
+5. 点击**Next**后点击**Finish**。这将在项目中添加包含头文件和源文件的新类。
+6. 现在需要重写`QBlinkingWidget`的`paintEvent`方法并使用`QPainter`进行绘制。首先在`qblinkingwidget.h`中添加以下头文件：
+
+```cpp
+#include <QPaintEvent> 
+#include <QPainter> 
+#include <QTimer> 
+```
+
+7. 在`QBlinkingWidget`类中添加以下受保护成员（例如添加在现有公共成员之后）：
+
+```cpp
+protected: 
+ void paintEvent(QPaintEvent *event) override;
+```
+
+8. 为该类添加私有槽函数：
+
+```cpp
+private slots: 
+  void onBlink(); 
+```
+
+9. 在`qblinkingwidget.h`中添加以下私有成员：
+
+```cpp
+private: 
+ QTimer blinkTimer; 
+ bool blink; 
+```
+
+10. 在`qblinkingwidget.cpp`的构造函数中添加以下代码：
+
+```cpp
+blink  = false;
+connect(&blinkTimer, &QTimer::timeout, this, &BlinkingWidget::onBlink);
+blinkTimer.start(500);
+```
+
+11. 在`qblinkingwidget.cpp`中添加以下两个方法：
+
+```
+void QBlinkingWidget::paintEvent(QPaintEvent *event) 
+{ 
+    Q_UNUSED(event);
+    QPainter painter(this);
+    if(blink)
+        painter.fillRect(this->rect(), QBrush(Qt::red));
+    else
+        painter.fillRect(this->rect(), QBrush(Qt::white));
+} 
+ 
+void QBlinkingWidget::onBlink() 
+{ 
+  blink = !blink; 
+  this->update(); 
+}
+```
+
+12. 通过`mainwindow.ui`进入设计模式，向`MainWindow`类添加一个**Widget**（注意是空部件）：
+
+![img](doc/img/bcf530a0-d73d-41cd-aff8-7385c8041759.png)
+
+13. 右键点击添加的空部件（`QWidget`类），选择**Promote to**：
+
+![img](doc/img/ff9aa0d6-1381-4ec8-9e9a-e7301045e281.png)
+
+14. 在弹出窗口中设置**Promoted class name**为`QBlinkingWidget`，点击**Add**按钮：
+
+![img](doc/img/4799301c-8917-40fa-b3d5-0f189831d4bf.png)
+
+15. 点击**Promote**完成提升。运行程序即可看到部件每500毫秒（半秒）闪烁一次。
+
+这实际上是创建Qt自定义部件的通用方法。总结步骤如下：
+
+1. 创建继承`QWidget`的新类
+2. 重写其`paintEvent`函数
+3. 使用`QPainter`进行绘制
+4. 在窗口中添加`QWidget`
+5. 将其提升为新建部件
+
+当使用第三方开发的部件时，也采用相同的提升方法。在前例中，我们通过`QPainter::fillRect`根据`blink`变量状态切换红白填充色。类似地，可使用`drawArc`、`drawEllipse`、`drawImage`等函数在部件上绘制任意图形。关键点在于：绘制部件时需将`this`传递给`QPainter`实例。若要在`QImage`上绘制，只需确保将`QImage`传递给`QPainter`构造函数或使用`begin`函数。示例：
+
+```
+QImage image(320, 240, QImage::Format_RGB888); 
+QPainter painter; 
+painter.begin(&image); 
+painter.fillRect(image.rect(), Qt::white); 
+painter.drawLine(0, 0, this->width()-1, this->height()-1); 
+painter.end(); 
+```
+
+注意所有绘制函数需包含在`begin`和`end`调用之间。
 
