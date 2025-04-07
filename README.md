@@ -3007,9 +3007,185 @@ image = image.transformed(trans); // 应用变换
 
 
 
+## QPixmap 类
+
+`QPixmap` 类在某些方面与 `QImage` 类似，但 **`QPixmap` 主要用于在屏幕上显示图像**。`QPixmap` 可以用于加载和保存图像（就像 `QImage` 一样），但它**不提供灵活的图像数据操作功能，我们通常只会在完成所有修改、处理操作后需要显示图像时使用它**。大多数 `QPixmap` 方法与 `QImage` 方法同名且使用方式基本相同。对于我们来说重要且 `QImage` 中没有的两个函数如下：
+
+-   `convertFromImage`: 该函数可用于通过 `QImage` 的图像数据填充 `QPixmap` 的数据
+-   `fromImage`: 这是一个静态函数，本质上与 `convertFromImage` 的功能相同
+
+```cpp
+// 示例：将 QImage 转换为 QPixmap
+QImage image("path/to/image.png");
+QPixmap pixmap;
+pixmap.convertFromImage(image);  // 使用 convertFromImage 方法
+
+// 或者使用静态方法
+QPixmap pixmap = QPixmap::fromImage(image);
+```
 
 
 
+我们现在将创建一个示例项目来练习目前所学的知识。没有实际动手项目，本章学习的所有激动人心的技术都将被浪费，让我们从图像查看示例应用开始：
+
+1. **创建新项目**  
+
+    在 Qt Creator 中新建一个 Qt Widgets Application 项目，命名为 `ImageViewer`
+
+2. **界面设计** 
+
+    打开 `mainwindow.ui` 文件，使用设计器：
+
+    - 移除菜单栏、状态栏和工具栏
+    - 添加一个标签部件（`QLabel`）到窗口
+    - 点击窗口空白处，按 `Ctrl + G` 应用网格布局，确保部件随窗口自动调整大小
+    - 将标签的：
+      - `alignment/Horizontal` 属性设为 `AlignHCenter`
+      - `Horizontal` 和 `Vertical sizePolicy` 均设为 `Ignored`
+
+3. **添加头文件包含**  
+
+   在 `mainwindow.h` 中添加以下包含语句：
+
+    ```cpp
+    #include <QPixmap> 
+    #include <QDragEnterEvent> 
+    #include <QDropEvent> 
+    #include <QMimeData> 
+    #include <QFileInfo> 
+    #include <QMessageBox> 
+    #include <QResizeEvent> 
+    ```
+
+4. **添加保护函数声明**  
+
+   在 `MainWindow` 类定义中添加：
+
+    ```cpp
+    protected:
+        void dragEnterEvent(QDragEnterEvent *event) override;
+        void dropEvent(QDropEvent *event) override;
+        void resizeEvent(QResizeEvent *event) override;
+    ```
+
+5. **添加私有成员**  
+
+   在 `mainwindow.h` 中添加私有成员：
+
+    ```cpp
+    private:
+        QPixmap _pixmap;
+    ```
+
+6. **构造函数初始化**  
+
+   现在，切换到 mainwindow.cpp，在 MainWindow 构造函数中添加以下内容，以便在程序开始时调用：
+
+    ```cpp
+    setAcceptDrops(true);
+    ```
+
+7. **实现拖放处理**  
+
+   添加文件拖放处理：
+
+    ```cpp
+    /**
+     * @brief MainWindow::dragEnterEvent 用户拖拽文件进入窗口 → 触发 dragEnterEvent 进行验证
+     * @param event
+     */
+    void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+    {
+        QStringList acceptedFileTypes{"jpg", "png", "bmp"}; // 允许的文件类型
+    
+        /* 从文件管理器拖拽一个文件到应用程序时，
+         * 操作系统并不是直接传递文件内容，
+         * 而是传递一个文件路径的 URL（例如 file:///C:/Users/YourName/image.jpg） 
+         * 
+         * MIME（Multipurpose Internet Mail Extensions）
+         * 最初是为了标记电子邮件附件的类型（比如文本、图片、音频），
+         * 现在被广泛用于标识数据格式。
+         * 
+         */
+        if (event->mimeData()->hasUrls() &&
+            event->mimeData()->urls().count() == 1)
+        {
+            QUrl url = event->mimeData()->urls().at(0);  // 获取第一个URL
+            QString localPath = url.toLocalFile();       // 转换成本地文件路径（如 "C:/image.jpg"）
+            QFileInfo file(localPath);                   // 用文件路径做后续操作
+            if(acceptedFileTypes.contains(file.suffix().toLower()))
+            {
+                event->acceptProposedAction();
+            }
+        }
+    }
+    
+    
+    void MainWindow::dropEvent(QDropEvent *event) 
+    { 
+        QFileInfo file(event->mimeData()->urls().at(0).toLocalFile());
+        if(_pixmap.load(file.absoluteFilePath()))
+        {
+            ui->label->setPixmap(_pixmap.scaled(ui->label->size(),
+                                               Qt::KeepAspectRatio,
+                                               Qt::SmoothTransformation));
+        }
+        else
+        {
+            QMessageBox::critical(this,
+                                  tr("Error"),
+                                  tr("The image file cannot be read!"));
+        }
+    } 
+    ```
+
+   
+
+8. 最后添加窗口缩放事件处理：
+
+    ```cpp
+    void MainWindow::resizeEvent(QResizeEvent *event) 
+    { 
+      Q_UNUSED(event); 
+      if(!pixmap.isNull()) 
+      { 
+        ui->label->setPixmap(pixmap.scaled(ui->label->width()-5, 
+                                          ui->label->height()-5, 
+                                          Qt::KeepAspectRatio, 
+                                          Qt::SmoothTransformation)); 
+      } 
+    } 
+    ```
+
+
+
+正如你所猜测的，我们刚刚编写了一个能够显示拖放图像的应用程序。通过向`MainWindow`添加`dragEnterEvent`函数，我们能够检查被拖动的对象是否是文件，特别是是否为单个文件。接着我们检查了图像类型以确保其被支持。
+
+在`dropEvent`函数中，我们简单地用拖放到应用程序窗口的图像文件加载了`QPixmap`。然后将`QLabel`类的`pixmap`属性设置为我们的像素映射。
+
+最后在`resizeEvent`函数中，我们确保无论窗口大小如何变化，图像始终按正确宽高比缩放以适应窗口。
+
+如果漏掉上述步骤中的任何一步，你将会遇到Qt拖放编程技术的问题。例如，如果没有在`MainWindow`类构造函数中添加以下代码行，无论`MainWindow`类添加了什么函数，都不会接受任何拖放内容：
+
+```cpp
+setAcceptDrops(true);
+```
+
+这是最终应用程序的截图。尝试将不同图像拖放到应用程序窗口中观察效果。你甚至可以尝试拖放非图像文件来验证它们是否被拒绝：
+
+![img](doc/img/a3bc4e9f-ca2a-46e4-a457-f311fd023fc6.png)
+
+这本质上是一个关于如何在Qt中显示图像，以及如何为Qt应用程序添加拖放功能的教程。正如前例所示，`QPixmap`可以轻松地与`QLabel`部件配合显示。`QLabel`部件的名称有时会产生误导，但实际上它不仅可以显示纯文本，还能显示富文本、像素映射甚至动画（使用`QMovie`类）。由于我们已经知道如何将`Mat`转换为`QImage`（反之亦然），以及如何将`QImage`转换为`QPixmap`，我们可以编写如下代码来使用OpenCV加载图像，通过计算机视觉算法进行处理（我们将在第六章《OpenCV中的图像处理》及后续章节深入学习），然后将其转换为`QImage`继而转换为`QPixmap`，最终在`QLabel`上显示结果，如示例代码所示：
+
+```
+cv::Mat mat = cv::imread("c:/dev/test.jpg"); 
+QImage image(mat.data, 
+             mat.cols, 
+             mat.rows, 
+             mat.step, 
+             QImage::Format_RGB888); 
+ui->label->setPixmap(QPixmap::fromImage(image.rgbSwapped()));
+```
 
 
 
