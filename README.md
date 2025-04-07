@@ -2784,3 +2784,234 @@ bool success = imencode(".jpg", image, buffer, params);
 
 > **注意**：因无文件名指定格式，`imencode` 需通过扩展名参数（如 `.jpg`）确定输出格式。
 
+
+
+## OpenCV 中的视频读写
+
+OpenCV 提供 `VideoCapture` 类用于从磁盘文件、摄像头、网络视频流（如 RTSP 地址）读取视频或图像序列。使用 `open` 函数打开视频源，`read` 函数逐帧读取视频：
+
+```cpp
+VideoCapture video; 
+video.open("c:/dev/test.avi"); 
+if(video.isOpened()) 
+{ 
+    Mat frame; 
+    while(true) 
+    {             
+        if(video.read(frame)) 
+        { 
+            // 处理帧... 
+        } 
+        else 
+        { 
+            break; 
+        } 
+    } 
+} 
+video.release(); 
+```
+
+**读取图像序列**时，可使用文件路径模式。例如 `image_%02d.png` 将读取 `image_00.png`、`image_01.png` 等文件。
+
+**读取网络流**时，直接提供 URL 作为文件名。
+
+> **注意**：上述示例不完整。若在 GUI 应用中运行，需在循环内添加 `qApp->processEvents();` 避免界面卡死。更佳方案参见第 8 章 *多线程* 和第 9 章 *视频分析*。
+
+`VideoCapture` 类提供 `set` 和 `get` 函数配置参数。完整参数列表参考 `VideoCaptureProperties` 枚举。
+
+**快速查找参数技巧**：在 Qt Creator 中输入 `CAP_PROP_` 可自动补全相关参数。按住 *Ctrl* 点击枚举名称可跳转源码查看详细定义。
+
+获取视频总帧数示例：
+
+```cpp
+double frameCount = video.get(CAP_PROP_FRAME_COUNT); 
+```
+
+跳转到第 100 帧示例：
+
+```cpp
+video.set(CAP_PROP_POS_FRAMES, 100); 
+```
+
+使用 `VideoWriter` 类写入视频：
+
+```cpp
+VideoWriter video; 
+video.open("c:/dev/output.avi", CAP_ANY, CV_FOURCC('M','P','G','4'), 30.0, Size(640, 480), true); 
+if(video.isOpened()) 
+{ 
+    while(framesRemain()) 
+    { 
+        video.write(getFrame()); 
+    } 
+} 
+video.release();
+```
+
+参数说明：
+
+- `CAP_ANY`：捕获 API（可省略）
+- `CV_FOURCC`：FourCC 编码（如 MPG4）
+- `30.0`：帧率
+- `Size(640,480)`：帧尺寸
+- `true`：是否为彩色
+
+> **重要提示**：
+>
+> - FourCC 编码列表参考：http://www.fourcc.org/codecs.php
+> - 不同平台支持的编码可能不同，部署应用时需验证编解码器可用性
+
+
+
+## OpenCV 中的 HighGUI 模块
+
+OpenCV 的 `HighGUI` 模块用于快速创建简单 GUI。本书[第 3 章](#a8eea629-92d7-43eb-bce6-65057bf1b9b2.xhtml) *创建 Qt+OpenCV 综合项目* 中已使用该模块的 `imshow` 函数快速显示图像。但由于我们将使用 Qt 构建更完善的 GUI 框架，后续将完全跳过此模块。以下引用 OpenCV 文档对 `HighGUI` 模块的说明：
+
+> "尽管 OpenCV 设计用于全功能应用程序，并能集成到 Qt、WinForms、Cocoa 等成熟 UI 框架中（或无 UI 运行），但有时需要快速验证功能并可视化结果。这正是 `HighGUI` 模块的设计目标。"
+
+如本章后续内容所示，我们将弃用 `imshow` 函数，转用 Qt 的图像显示机制以确保界面统一性和功能性。
+
+
+
+# Qt 中的图像与视频处理
+
+Qt 使用多个不同的类来处理图像数据、视频、摄像头及计算机视觉相关任务。本节我们将学习这些类，并掌握如何在 Qt 类与 OpenCV 类之间建立连接，以实现更灵活的计算机视觉应用开发。
+
+## QImage 类
+
+作为 Qt 中最重要的计算机视觉相关类，`QImage` 是处理图像数据的核心类，提供像素级访问及多种图像操作功能。我们将重点介绍其与 OpenCV 协同使用时关键的构造函数和功能。
+
+## 构造函数与用法
+
+**创建空图像**：
+```cpp
+QImage image(320, 240, QImage::Format_RGB888); // 直接指定宽高
+QImage image(QSize(320, 240), QImage::Format_RGB888); // 使用 QSize
+```
+
+> 完整支持的格式列表请参考 `QImage::Format` 枚举。
+
+
+
+**从 OpenCV Mat 转换**：
+
+```
+Mat mat = imread("c:/dev/test.jpg"); 
+cvtColor(mat, mat, CV_BGR2RGB); // OpenCV 默认 BGR 需转为 RGB
+QImage image(mat.data, mat.cols, mat.rows, QImage::Format_RGB888);
+```
+
+>  [!note]
+>
+> 若省略 `cvtColor` 转换，会导致红蓝通道错位。 
+
+
+
+**推荐转换方式**（包含 `step` 参数）：
+
+```
+Mat mat = imread("c:/dev/test.jpg"); 
+cvtColor(mat, mat, CV_BGR2RGB);
+QImage image(mat.data, 
+             mat.cols, 
+             mat.rows, 
+             mat.step,  // 对应 Mat 的 step 值
+             QImage::Format_RGB888);
+```
+
+此方法支持连续存储的内存数据转换。
+
+**从文件读取**：
+
+```
+QImage image("c:/dev/test.jpg");
+```
+
+
+
+## Qt 支持的图像格式
+
+Qt 与 OpenCV 支持的格式相互独立。Qt 默认支持以下格式：
+
+| 格式 | 描述                 | 支持  |
+| :--- | :------------------- | :---- |
+| BMP  | Windows 位图         | 读/写 |
+| GIF  | 图形交换格式（可选） | 读    |
+| JPG  | 联合图像专家组       | 读/写 |
+| JPEG | 联合图像专家组       | 读/写 |
+| PNG  | 便携式网络图形       | 读/写 |
+| PBM  | 便携式位图           | 读    |
+| PGM  | 便携式灰度图         | 读    |
+| PPM  | 便携式像素图         | 读/写 |
+| XBM  | X11 位图             | 读/写 |
+| XPM  | X11 像素图           | 读/写 |
+
+
+
+除构造函数外，`QImage` 还包含以下实用成员：
+
+- **`allGray`**：检查图像是否全为灰度。该函数验证所有像素的 RGB 通道值是否相等。
+- **`bits`** 和 **`constBits`**（常量版本）：用于访问底层图像数据。可将 `QImage` 转换为 OpenCV 的 `Mat` 进行处理。转换时需确保格式兼容，推荐使用 `convertToFormat` 函数标准化为三通道 RGB 格式。示例如下：
+
+```cpp
+QImage image("c:/dev/test.jpg"); 
+image = image.convertToFormat(QImage::Format_RGB888); 
+Mat mat = Mat(image.height(), 
+              image.width(), 
+              CV_8UC(3), 
+              image.bits(), 
+              image.bytesPerLine()); 
+```
+
+需要注意的是，在像这样传递数据时，就像我们在将 Mat 转换为 QImage 时看到的那样，在 Qt 和 OpenCV 的类之间传递的内存空间是相同的，这一点非常重要。这意味着，**如果您修改了上例中的 Mat 类，实际上也是在修改QImage 类，因为您只是将其数据指针传递给了 Mat 类。这既可能非常有用（更容易操作图像），同时也可能非常危险（应用程序崩溃），因此在使用 Qt 和 OpenCV 时必须小心谨慎**。如果要确保 QImage 和 Mat 类拥有完全独立的数据，可以使用 Mat 类中的克隆函数或 QImage 中的复制函数。
+
+- **`byteCount`**：返回图像数据占用的总字节数。
+- **`bytesPerLine`**：类似 `Mat` 的 `step` 参数，表示每行字节数（等于 `byteCount / height`）。
+- **`convertToFormat`**：转换图像格式（如前文用于标准化为 `Format_RGB888`）。
+- **`copy`**：复制全部或部分图像到新 `QImage`。
+- **`depth`**：返回图像深度（每像素位数）。
+- **`fill`**：用指定颜色填充所有像素。支持：
+  - `QColor` 对象
+  - `Qt::GlobalColor` 枚举
+  - 像素值整数
+
+这些函数以及 Qt 框架中的许多其他类似函数都使用三种颜色类型：QColor、Qt::GlobalColor 以及与像素位相对应的整数值。尽管这些函数非常容易使用，但在继续之前，最好还是花几分钟时间在 Qt Creator 帮助模式下阅读一下它们的文档页面。
+
+- **`format`**：获取当前图像格式（推荐使用 `Format_RGB888` 实现 Qt-OpenCV 兼容）。
+- **`hasAlphaChannel`**：检测是否包含透明通道。
+- **`height/width/size`**：获取图像尺寸信息。
+- **`isNull`**：判断是否为空图像。
+- **`load/loadFromData/fromData`**：从文件或缓冲区加载图像（类似 OpenCV 的 `imdecode`）。
+- **`mirrored`**：镜像翻转图像（水平/垂直/双向）。
+- **`pixel/pixelColor`**：获取像素值（返回整数或 `QColor`）。
+- **`rect`**：获取图像边界矩形（`QRect` 对象）。
+- **`rgbSwapped`**：交换红蓝通道（无需修改数据，用于快速显示 OpenCV 的 BGR 图像）。
+- **`save`**：保存图像到文件。
+- **`scaled/scaledToHeight/scaledToWidth`**：缩放图像，可选比例模式：
+  - `Qt::IgnoreAspectRatio`：忽略宽高比
+  - `Qt::KeepAspectRatio`：保持宽高比
+  - `Qt::KeepAspectRatioByExpanding`：保持比例并扩展
+- **`setPixel/setPixelColor`**：设置单个像素值。
+- **`setText/text`**：读写图像元数据文本（支持格式需具备此功能）。
+- **`transformed`**：应用矩阵变换（如旋转）。示例：
+
+```cpp
+QImage image("c:/dev/test.jpg"); 
+QTransform trans; 
+trans.rotate(45); // 创建 45 度旋转矩阵
+image = image.transformed(trans); // 应用变换
+```
+
+- **`trueMatrix`**：获取实际应用的变换矩阵。
+- **`valid`**：检查坐标点是否在图像范围内。
+
+
+
+
+
+
+
+
+
+
+
