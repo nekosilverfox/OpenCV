@@ -4235,9 +4235,13 @@ void QEnhancedGraphicsView::mousePressEvent(QMouseEvent *event)
         }
     }
     
+    #include "customgraphicseffect.h"
     void EnhancedGraphicsView::customEffect(bool)
     {
-    
+        for (auto i : scene()->selectedItems())
+        {
+            i->setGraphicsEffect(new CustomGraphicsEffect(this));
+        }
     }
     ```
 
@@ -4292,11 +4296,189 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
 请务必仔细阅读整个下载的源代码，确保完全理解 `Computer_Vision` 项目源码的所有细节。此项目旨在将所有知识点整合到一个综合性强、可复用的示例项目中。
 
+---
 
+**总结：**
 
+自本书开篇以来，我们已走过漫长的学习之路。至此，我们已全面掌握了开发计算机视觉应用程序所需的众多实用技术。在前述章节（包括刚完成的第五章）中，我们不仅聚焦于计算机视觉（具体而言是 OpenCV 技能），更深入学习了如何构建功能强大、综合全面的应用程序。您已掌握如何创建支持多语言、多主题样式和插件化的应用程序；在本章中，您还学习了如何在场景和视图中可视化图像与图形元素。现在，我们已具备深入探索计算机视觉应用开发所需的几乎所有工具。
 
+在[第 6 章](#e4effd35-71cb-4b71-a945-62bce820a80e.xhtml)《OpenCV 图像处理》中，您将进一步学习 OpenCV 的各类图像处理技术。针对每个学习主题，我们将假设需要创建一个与 Computer_Vision 项目兼容的插件。这意味着我们将复用 Computer_Vision 项目中的模板插件，通过复制和修改来创建具有特定计算机视觉功能（如图像变换滤镜或计算）的新插件。当然，这并不妨碍您创建具有相同功能的独立应用程序——正如后续章节所示，我们的插件同样包含 GUI 界面，其本质与创建独立 Qt Widgets 应用程序无异（这正是前几章已涵盖的知识）。从本章开始，我们将转向更高级的主题，重点聚焦于应用程序的计算机视觉功能实现。您将学习：
 
+- OpenCV 中丰富的滤波功能
+- 多种图像处理技术
+- 支持的不同色彩空间
+- 各类图像变换方法
+- 及其他进阶内容
 
+# OpenCV 中的图像处理
+
+一切始于未经处理的原始图像，这些图像可能来自智能手机、网络摄像头、单反相机，或任何能够拍摄和记录图像数据的设备。然而，最终呈现的可能是锐利或模糊、明亮、昏暗或平衡、黑白或彩色，以及同一图像数据的许多其他不同表现形式。这通常是计算机视觉算法的第一步（也是最重要的一步），通常被称为**图像处理**（暂且忽略计算机视觉和图像处理有时会被混用的现象，这是历史专家讨论的话题）。当然，图像处理也可能出现在计算机视觉流程的中间或最终阶段，但一般来说，大多数设备拍摄的照片或视频在后续处理前都会经过某种图像处理算法。这些算法有的仅用于转换图像格式，有的用于调整色彩、去除噪点，还有更多功能不胜枚举。OpenCV 框架提供了丰富的能力来处理不同类型的图像处理任务，如图像滤波、几何变换、绘图、处理不同色彩空间、图像直方图等，这些将是本章的重点。
+
+在本章中，你将学习许多不同的函数和类，尤其是 OpenCV 框架中 `imgproc` 模块的内容。我们将从图像滤波开始，过程中你将学习如何创建 GUI 以正确使用现有算法。之后，我们将学习 OpenCV 提供的几何变换能力。接着简要介绍色彩空间及其相互转换方法。然后学习 OpenCV 中的绘图函数。如前面章节所见，Qt 框架也提供了非常灵活的绘图功能，甚至通过场景-视图-项架构更便捷地处理屏幕上的图形对象；不过在某些情况下，我们也会使用 OpenCV 的绘图函数，它们通常速度更快且能满足日常图形任务需求。本章最后将介绍 OpenCV 中最强大且易用的匹配检测方法之一——**模板匹配**。
+
+本章包含大量有趣的示例和实践材料，请务必亲自运行所有示例以观察效果，并通过第一手经验学习，而不仅仅是依赖章节中的截图和示例源码。
+
+本章将涵盖以下主题：
+
+-   如何为 `Computer_Vision` 项目及每个学习的 OpenCV 技能创建新插件
+-   如何对图像进行滤波
+-   如何执行图像变换
+-   色彩空间及其相互转换方法，如何应用色彩映射
+-   图像阈值化
+-   OpenCV 中可用的绘图函数
+-   模板匹配及其在物体检测和计数中的应用
+
+## 图像滤波
+
+在本节初始部分，你将学习 OpenCV 中不同的线性和非线性图像滤波方法。需要注意的是，本节讨论的所有函数都以 `Mat` 图像作为输入，并生成相同尺寸和通道数的 `Mat` 图像。实际上，**滤波器是独立应用于每个通道的**。通常，滤波方法会从输入图像中获取一个像素及其邻域像素，并基于这些像素的函数响应计算生成图像中对应像素的值。
+
+在计算滤波后的像素结果时，通常需要对不存在的像素进行假设。OpenCV 提供了多种处理此问题的方法，可以通过 `cv::BorderTypes` 枚举在几乎所有需要处理此现象的 OpenCV 函数中指定。稍后我们将在本章第一个示例中演示其用法，但在此之前，让我们通过下图确保完全理解这一概念：
+
+![](doc/img/ebef60c8-cfe5-4de0-978a-0fa3f2e39174.png)
+
+如上图所示，计算（或本例中的滤波函数）获取**区域 A** 的像素，并在**处理后图像**（本例为滤波图像）中生成**像素 A**。这种情况下没有问题，因为**输入图像**中**像素 A** 邻域的所有像素都在图像内部（即**区域 A**）。但对于图像边缘附近的像素（OpenCV 中称为边界像素）呢？如你所见，**像素 B** 的邻域像素并非全部位于输入图像中（即**区域 B**）。此时我们需要假设图像外部的像素值为零、与边界像素相同等。这正是 `cv::BorderTypes` 枚举的作用，我们将在示例中指定合适的值。
+
+现在，在开始图像滤波函数之前，让我们通过第一个示例演示 `cv::BorderTypes` 的用法。借此机会，我们还将学习如何为前几章创建的 `Computer_Vision` 项目创建新插件（或克隆现有插件）。步骤如下：
+
+1. **创建插件**  
+
+    若已完整跟随本书示例至当前章节，且已在[第五章](#23154d9b-43b1-411a-874a-d82e2a904927.xhtml)下载 `Computer_Vision` 项目，可通过复制 `template_plugin` 文件夹创建新插件。将新文件夹重命名为 `copymakeborder_plugin`，这将成为我们第一个实际插件。
+
+2. **重命名文件**  
+    进入 `copymakeborder_plugin` 文件夹，将所有文件名中的 `template` 替换为 `copymakeborder`。包括：
+
+    - `template_plugin.pro` → `copymakeborder_plugin.pro`
+    - `template_plugin.h` → `copymakeborder_plugin.h`
+    - `template_plugin.cpp` → `copymakeborder_plugin.cpp`
+
+3. **修改项目文件**  
+    用文本编辑器或 Qt Creator 打开 `copymakeborder_plugin.pro`，更新 `TARGET` 配置：
+    ```cpp
+    TARGET = CopyMakeBorder_Plugin
+    ```
+
+4. **更新定义**  
+    类似上一步，需更新 `DEFINES` 配置：
+    
+    ```cpp
+    DEFINES += COPYMAKEBORDER_PLUGIN_LIBRARY
+    ```
+    
+5. **更新文件条目**  
+    确保 `.pro` 文件中的 `HEADERS` 和 `SOURCES` 条目同步更新：
+    ```cpp
+    SOURCES += \ 
+      copymakeborder_plugin.cpp 
+    HEADERS += \ 
+      copymakeborder_plugin.h \ 
+      copymakeborder_plugin_global.h
+    ```
+    保存并关闭 `.pro` 文件。
+    
+6. **配置主项目文件**  
+    使用 Qt Creator 打开 `computer_vision.pro` 文件（这是 Qt 的多项目容器文件）。该文件通常结构如下：
+    ```cpp
+    TEMPLATE = subdirs 
+    SUBDIRS += \ 
+            mainapp \ 
+            template_plugin 
+    ```
+
+7. **添加新插件**  
+    将 `copymakeborder_plugin` 添加到 `SUBDIRS` 列表：
+    ```cpp
+    TEMPLATE = subdirs 
+    SUBDIRS += \ 
+    mainapp \ 
+    template_plugin \ 
+    copymakeborder_plugin 
+    ```
+    **注意**：若条目跨多行，需在每行末尾添加 `\\`（最后一行除外）。
+
+8. **批量替换代码**  
+    使用 Qt Creator 的 **目录内查找替换** 功能更新代码中的类名和宏：
+    1. 在 **项目面板** 右键点击 `copymakeborder_plugin` 文件夹
+    2. 选择 **Find in This Directory...**
+    ![](doc/img/9df20080-4ca4-4f0b-a0e9-b6aae594a379.png)
+
+9. **执行搜索替换**  
+    1. 在 **Search Results** 面板输入 `TEMPLATE_PLUGIN`，勾选 **区分大小写**
+    2. 点击 **Search & Replace**
+    ![](doc/img/6f2ec581-4892-486e-819d-dadbaae4dc52.png)
+
+10. **替换为新的宏名**  
+    在 **Replace with** 输入 `COPYMAKEBORDER_PLUGIN`，点击 **Replace**：
+    ![](doc/img/41ff2952-77a1-40c4-91e6-18c08171ea1b.png)
+
+11. **完成剩余替换**  
+    重复上述步骤：
+    - 将 `template_plugin` 替换为 `copymakeborder_plugin`
+    - 将 `Template_Plugin` 替换为 `CopyMakeBorder_Plugin`
+
+至此，新插件项目已配置完成，可在 `Computer_Vision` 项目中编译使用。
+
+---
+
+本章第一个示例的所有前置步骤仅用于准备插件项目。从现在起，在需要创建新插件时，我们将统一称这些步骤为**克隆模板插件**以创建*X*插件（本例中*X*为`copymakeborder_plugin`）。这将避免重复说明，让我们更专注于学习 OpenCV 和 Qt 技能。尽管步骤繁琐，但通过`mainapp`子项目（一个**Qt Widgets 应用**）统一处理图像加载、显示、主题风格等任务，插件只需专注特定计算机视觉功能。后续示例将主要填充插件函数并创建 GUI，构建后复制插件库到`cvplugins`目录即可通过`mainapp`菜单调用。
+
+**提示**：修改`.pro`文件后，建议手动运行 qmake：在 Qt Creator 的 **项目面板** 右键项目 → **Run qmake**。
+
+12. **设计插件 UI**  
+    打开 `plugin.ui`，按以下要求添加控件（注意 `objectName` 值），整体布局设为网格布局：
+    ![](doc/img/af5f9e0a-8e51-47a0-afd0-69c7c7c2c69a.png)
+
+13. **固定标签宽度**  
+    将 `borderTypeLabel` 的 `sizePolicy/Horizontal Policy` 属性设为 `Fixed`，确保标签宽度固定。
+
+14. **连接信号槽**  
+    
+    ```cpp
+    connect(ui->cbBorderType, &QComboBox::currentIndexChanged, this, &CopyMakeBorder_Plugin::updateNeeded);
+    ```
+    此信号通知 `mainapp` 更新界面（`mainapp` 已将此信号连接到插件的 `processImage` 函数）。
+
+15. **填充组合框**  
+    在 `copymakeborder_plugin.cpp` 的 `setupUi` 函数中添加：
+    ```cpp
+    QStringList items; 
+    items.append("BORDER_CONSTANT"); 
+    items.append("BORDER_REPLICATE"); 
+    items.append("BORDER_REFLECT"); 
+    items.append("BORDER_WRAP"); 
+    items.append("BORDER_REFLECT_101"); 
+    ui->cbBorderType->addItems(items);
+    ```
+    组合框项与 `cv::BorderTypes` 枚举值对应，需手动连接信号（因插件未使用 Qt 的自动连接机制）。
+    
+16. **实现图像处理**  
+    更新 `processImage` 函数：
+    ```cpp
+            int top, bot, left, right; 
+            top = bot = inputImage.rows/2; 
+            left = right = inputImage.cols/2; 
+            cv::copyMakeBorder(inputImage, 
+                outputImage, 
+                top, 
+                bot, 
+                left, 
+                right, 
+            ui->borderTypeComboBox->currentIndex()); 
+    ```
+    调用 `copyMakeBorder` 函数，上下边距为图像高度的一半，左右边距为宽度的一半，边界类型从 GUI 获取。
+
+**测试插件**  
+1. 右键 **Computer_Vision** 项目 → **Rebuild** 完整重建  
+2. 将生成的插件库文件复制到 `cvplugins` 目录（与 `mainapp` 可执行文件同级）  
+3. 运行 `mainapp` → 通过 **Plugins** 菜单选择新插件  
+
+![](doc/img/90b80d20-8700-4b37-8008-425e72bbd313.png)
+
+切换组合框中的边界类型，观察图像变化。注意：
+- `BORDER_REFLECT_101` 是 OpenCV 滤波函数的默认边界类型，与 `BORDER_REFLECT` 类似但不重复边界前一像素
+- 各边界类型效果参考 OpenCV 文档：  
+![](doc/img/d1973b8e-23c6-4259-a74a-441a1d018d17.png)
+
+至此，我们已准备好探索 OpenCV 的其他滤波函数。
 
 
 

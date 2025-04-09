@@ -64,7 +64,7 @@ void EnhancedGraphicsView::mousePressEvent(QMouseEvent *event)
         QAction *customEffectAction = menu.addAction("Custom Effect");
         connect(customEffectAction, &QAction::triggered, this, &EnhancedGraphicsView::customEffect);
 
-        menu.exec(event->globalPos());
+        menu.exec(event->globalPosition().toPoint());
         event->accept();
     }
     else
