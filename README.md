@@ -3937,6 +3937,8 @@ QRectF sceneRect = view->mapToScene(viewRect);
 
 
 
+### 自定义 GraphicsItem 及简单鼠标缩放
+
 与 `QGraphicsScene` 和 `QGraphicsItem` 类相同，`QGraphicsView` 也提供了许多相同的受保护虚成员，可用于进一步扩展视图的功能。现在我们将扩展 `Graphics_Viewer` 示例项目，以支持更多元素、元素选择、元素删除和缩放功能。在此过程中，我们将回顾本章学习的视图、场景和元素的一些最重要用例。让我们开始实施：
 
 1. 首先在 Qt Creator 中打开 `Graphics_Viewer` 项目；然后从主菜单中选择 "New File or Project"，在新建文件或项目窗口中选择 C++ 和 C++ Class，点击 "Choose" 按钮。
@@ -4005,6 +4007,8 @@ QRectF sceneRect = view->mapToScene(viewRect);
 
 
 
+### 调整缩放中心为鼠标位置
+
 现在可以启动应用程序并尝试使用鼠标滚轮进行滚动。当向上或向下滚动滚轮时，可以看到缩放级别的变化。以下是应用程序对图像进行放大和缩小的效果截图：
 
 ![](doc/img/1f9a24f3-3ad9-408a-aa5a-1a6815e21b48.png)
@@ -4065,7 +4069,9 @@ void EnhancedGraphicsView::wheelEvent(QWheelEvent *event)
 
 通过函数名即可理解其逻辑：我们实现 `mouseMoveEvent` 捕获鼠标位置（以场景View坐标系为准，这非常重要），确保放大（非缩小）操作后视图将采集的点置于屏幕中心，最后更新位置以实现更舒适的缩放体验。需注意：此类细节缺陷或功能的处理方式，将直接影响用户使用应用的舒适度，最终成为应用成败的关键参数之一。
 
+---
 
+### 允许添加多个图像
 
 现在我们将为 Graphics_Viewer 应用程序添加更多功能。首先确保应用程序能够处理无限数量的图像：
 
@@ -4110,6 +4116,8 @@ void EnhancedGraphicsView::wheelEvent(QWheelEvent *event)
 <img src="doc/img/376494ed-9341-4a3e-9e44-e3296a513383.png" style="zoom:67%;" />
 
 ---
+
+### 添加橡皮筋选中及应用特效到 item
 
 显然当前应用程序仍缺乏许多功能，但本章将涵盖一些关键能力，其余功能留待读者自行探索。当前缺失的重要功能包括：无法选择元素、删除元素或对其应用特效。我们将一次性为 `Graphics_Viewer` 应用程序实现这些基础但关键的功能。后续章节中，我们会在综合计算机视觉项目（名为 `Computer_Vision`）中使用本章所学技术。以下是 `Graphics_Viewer` 项目的最终功能补充步骤：
 
@@ -4276,7 +4284,7 @@ void QEnhancedGraphicsView::mousePressEvent(QMouseEvent *event)
 
 至此，我们成功构建了一个功能强大的图形查看器，可集成到后续章节的 `Computer_Vision` 项目中（用于学习更多 OpenCV 和 Qt 技术）。完整项目代码可通过以下链接下载：
 
-https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch05/computer_vision16
+https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch05/computer_vision
 
 如我们在前几章反复强调的，本项目的目标是帮助我们专注于计算机视觉主题，同时处理所有必需的 GUI 功能、多语言支持、主题样式等。该项目完整整合了迄今所学的全部知识，是一个支持样式自定义、多语言扩展和插件化开发的应用程序。它还将本章所学内容封装成一个强大的图形查看器，我们将在后续章节持续使用。请务必在继续学习后续章节前下载该项目。
 
