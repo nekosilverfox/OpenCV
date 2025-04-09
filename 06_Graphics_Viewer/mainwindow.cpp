@@ -10,6 +10,8 @@
 #include <QResizeEvent>
 #include <QGraphicsItem>
 
+#include "customgraphicseffect.h"
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -67,6 +69,7 @@ void MainWindow::dropEvent(QDropEvent *event)
     {
         scene.clear();
         scene.addItem(new QGraphicsPixmapItem(pixmap));
+        ui->graphicsView->fitInView(scene.sceneRect(), Qt::KeepAspectRatio);
     }
     else
     {
@@ -74,6 +77,14 @@ void MainWindow::dropEvent(QDropEvent *event)
                               tr("Error"),
                               tr("The image file cannot be read!"));
     }
+
+// 简单的阈值滤镜
+#if 1
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(pixmap);
+    item->setGraphicsEffect(new CustomGraphicsEffect(this));
+    // item->setGraphicsEffect(new QGraphicsBlurEffect(this));
+    scene.addItem(item);
+#endif
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

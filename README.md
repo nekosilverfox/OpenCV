@@ -3566,9 +3566,332 @@ Qt框架中有一个专注于简化图形处理的**图形视图框架(Graphics 
 
 
 
+## 项 QGraphicsItem
+
+这是场景中所有绘制项的基础类。它包含各种方法和属性，用于处理每个项的绘制、碰撞检测（与其他项）、处理鼠标点击和其他事件等功能。尽管你可以通过子类化它来创建自己的图形项，但 Qt 也提供了一系列子类，可用于满足日常图形任务的大部分（甚至全部）需求。以下这些子类中，有些我们已在前面的示例中直接或间接使用过：
+
+- `QGraphicsEllipseItem`: 用于绘制椭圆或圆形。
+- `QGraphicsLineItem`: 用于绘制线段。
+- `QGraphicsPathItem`: 用于绘制复杂路径（由 `QPainterPath` 定义）。
+- `QGraphicsPixmapItem`: 用于显示图像（`QPixmap`），如[第4章](#f36fb509-ba51-4ed5-8896-8ee2c5027910.xhtml)中处理图像时使用的项。
+- `QGraphicsPolygonItem`: 用于绘制多边形。
+- `QGraphicsRectItem`: 用于绘制矩形。
+- `QGraphicsSimpleTextItem`: 用于显示简单文本。
+- `QGraphicsTextItem`: 用于显示富文本（支持 HTML 格式）。
+- `QGraphicsProxyWidget`: 用于将 Qt 控件（如按钮、输入框等）嵌入到图形场景中。
 
 
 
+如前所述，`QGraphicsItem` 提供了众多函数和属性来处理图形应用程序中的问题和任务。本节我们将探讨 `QGraphicsItem` 中一些最重要的成员，从而帮助理解前文提到的子类：
+
+- `acceptDrops` 和 `setAcceptDrops` 函数可用于使项接受拖放事件。注意这与之前示例中看到的拖放事件非常相似，但主要区别在于项本身会感知拖放事件。
+
+- `acceptHoverEvents`、`setAcceptHoverEvents`、`acceptTouchEvents`、`setAcceptTouchEvents`、`acceptedMouseButtons` 和 `setAcceptedMouseButtons` 函数均用于处理项的交互及其对鼠标点击等操作的响应。需注意，项可以根据 `Qt::MouseButtons` 枚举设置响应或忽略不同的鼠标按键。
+
+    ```cpp
+    QGraphicsRectItem *item = 
+       new QGraphicsRectItem(0, 
+                             0, 
+                             100, 
+                             100, 
+                             this); 
+    item->setAcceptDrops(true); 
+    item->setAcceptHoverEvents(true); 
+    item->setAcceptedMouseButtons( 
+            Qt::LeftButton | 
+            Qt::RightButton | 
+            Qt::MidButton); 
+    ```
+
+    
+
+- `boundingRegion` 函数可用于获取描述图形项区域的 `QRegion` 类。这是一个非常重要的函数，因为它能获取项需要绘制（或重绘）的精确区域。与项的边界矩形不同，因为简单来说，项可能仅覆盖其边界矩形的一部分（例如线段等）。具体示例可参考下文说明。
+
+- `boundingRegionGranularity` 和 `setBoundingRegionGranularity` 函数用于设置和获取计算项 `boundingRegion` 函数时的粒度级别。此处的粒度是介于0和1之间的实数，对应计算时的细节程度：
+
+    ```cpp
+    QGraphicsEllipseItem *item = 
+        new QGraphicsEllipseItem(0, 
+                                 0, 
+                                 100, 
+                                 100); 
+    scene.addItem(item); 
+    item->setBoundingRegionGranularity(g); // 0 , 0.1 , 0.75 and 1.0 
+    
+    QTransform transform; 
+    QRegion region = item->boundingRegion(transform); 
+    
+    QPainterPath painterPath; 
+    painterPath.addRegion(region); 
+    
+    QGraphicsPathItem *path = new QGraphicsPathItem(painterPath); 
+    scene.addItem(path); 
+    ```
+
+    
+
+在上述代码中，如果将 `g` 替换为 0.0、0.1、0.75 和 1.0，将得到以下结果。显然，值为 0（默认粒度）会生成单个矩形（边界矩形），这不是精确的估计。随着粒度级别的提高，我们会得到更精确的区域（本质上是一组矩形），覆盖图形形状和项：
+
+![](doc/img/18f48d84-95e0-4fd4-9869-ec1c63d52f8c.png)
+
+- `childItems` 函数可用于获取包含该项子项的 `QList`（存储 `QGraphicsItem` 类）。可将其视为复杂项的子项集合。
+
+- `childrenBoundingRect`、`boundingRect` 和 `sceneBoundingRect` 函数可用于获取包含该项子项、项本身及场景的边界矩形的 `QRectF` 类。
+
+- `clearFocus`、`setFocus` 和 `hasFocus` 函数用于清除、设置和获取项的焦点状态。拥有焦点的项会接收键盘事件。
+
+- `collidesWithItem`、`collidesWithPath` 和 `collidingItems` 函数可用于检查该项是否与给定项发生碰撞，并获取与该项碰撞的项列表。
+
+- `contains` 函数接受一个点坐标（精确类型为 `QPointF`），检查该项是否包含该点。
+
+- `cursor`、`setCursor`、`unsetCursor` 和 `hasCursor` 函数用于为项设置、获取、重置特定鼠标光标类型，并检查项是否已设置光标。设置后，当鼠标悬停在该项上时，光标形状会切换为设定值。
+
+- `hide`、`show`、`setVisible`、`isVisible`、`opacity`、`setOpacity` 和 `effectiveOpacity` 函数均与项的可见性和不透明度相关。这些函数名自解释，唯一需要注意的是 `effectiveOpacity`（实际不透明度）可能与项本身的不透明度不同，因为其计算基于该项及其父项的不透明度层级。最终，`effectiveOpacity` 是屏幕上绘制该项时实际使用的不透明度值。
+
+- `flags`、`setFlags` 和 `setFlag` 函数用于获取或设置项的标志。这里的“标志”本质上是 `QGraphicsItem::GraphicsItemFlag` 枚举值的组合。
+
+    ```cpp
+    item->setFlag(QGraphicsItem::ItemIsFocusable, true); 
+    item->setFlag(QGraphicsItem::ItemIsMovable, false);
+    ```
+
+    
+
+**需注意：使用 `setFlag` 函数时，所有先前设置的标志状态会被保留，仅影响该函数指定的单个标志；而使用 `setFlags` 时，所有标志将根据给定的组合重置。**
+
+- `grabMouse`、`grabKeyboard`、`ungrabMouse` 和 `ungrabKeyboard` 方法用于控制场景中接收鼠标和键盘事件的项。默认实现中，一次只有一个项能捕获鼠标或键盘事件。除非另一项捕获、当前项主动释放、被删除或隐藏，否则捕获状态保持不变。可通过 `QGraphicsScene` 类的 `mouseGrabberItem` 函数获取当前捕获项（如本章前文所述）。
+- `setGraphicsEffect` 和 `graphicsEffect` 函数用于设置和获取 `QGraphicsEffect` 类。这是一个强大且易用的功能，可为场景中的项添加滤镜或特效。`QGraphicsEffect` 是 Qt 中所有图形特效的基类，可通过子类化创建自定义特效，或直接使用 Qt 提供的以下内置图形特效类：
+    - `QGraphicsBlurEffect`（模糊特效）
+    - `QGraphicsColorizeEffect`（着色特效）
+    - `QGraphicsDropShadowEffect`（投影特效）
+    - `QGraphicsOpacityEffect`（透明度特效）
+
+
+
+让我们通过一个自定义图形效果示例并结合 Qt 自带的图形特效来深入理解该概念：
+
+1. 使用本章前文创建的 `Graphics_Viewer` 项目。在 Qt Creator 中打开后，通过主菜单选择 **新建文件或项目** → **C++** → **C++ 类**，点击 **Choose** 按钮。
+2. 输入类名为 `QCustomGraphicsEffect`，选择基类为 `QObject`，勾选 **包含 QObject** 复选框（若未默认勾选）。点击 **Next** → **Finish** 完成创建。
+
+3. 在新建的 `qcustomgraphicseffect.h` 文件中添加以下头文件包含：
+
+```cpp
+#include <QGraphicsEffect>
+#include <QPainter>
+```
+
+4. 修改类继承关系，使 `QCustomGraphicsEffect` 继承自 `QGraphicsEffect`（修改 `qcustomgraphicseffect.h` 中的类定义）：
+
+    ```
+    class QCustomGraphicsEffect : public QGraphicsEffect
+    ```
+
+    
+
+5. 更新类构造函数，确保调用 `QGraphicsEffect` 的构造函数（修改 `qcustomgraphicseffect.cpp` 文件）：
+
+    ```
+    QCustomGraphicsEffect::QCustomGraphicsEffect(QObject *parent)
+        : QGraphicsEffect(parent)
+    ```
+
+    
+
+6. 在 `qcustomgraphicseffect.h` 的类定义中添加 `draw` 函数声明：
+
+    ```cpp
+    protected:
+        void draw(QPainter *painter) override;
+    ```
+
+    
+
+7. 在 `qcustomgraphicseffect.cpp` 中实现 `draw` 函数。本例将创建一个简单的阈值滤镜，根据像素灰度值将其设为纯黑或纯白：
+
+    ```
+    void QCustomGraphicsEffect::draw(QPainter *painter)
+    {
+        /*
+         * 图像转换为灰度图（QImage::Format_Grayscale8），
+         * 所以每个像素在内存中的表示已经不再是 RGB 值，
+         * 而是一个单独的灰度值（一个字节），
+         * 其取值范围是 0 到 255
+         */
+        QImage image = sourcePixmap().toImage();
+        image = image.convertToFormat(QImage::Format_Grayscale8);
+    
+        for(int i=0; i<image.sizeInBytes(); i++)
+            image.bits()[i] = (image.bits()[i] < 100) ? 0 : 255;
+    
+        painter->drawPixmap(0, 0, QPixmap::fromImage(image));
+    }
+    ```
+
+    
+
+8. 在 `mainwindow.h` 中包含自定义效果类的头文件：
+
+    ```cpp
+    #include "qcustomgraphicseffect.h"
+    ```
+
+    
+
+9. 在项目的 `dropEvent` 函数中应用此效果（修改 `Graphics_Viewer` 项目的 `dropEvent`）：
+
+    ```cpp
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(pixmap);
+    item->setGraphicsEffect(new QCustomGraphicsEffect(this));
+    scene.addItem(item);
+    ```
+
+以上步骤演示了如何通过继承 `QGraphicsEffect` 创建自定义图形滤镜，实现像素级图像处理
+
+
+
+若所有步骤正确执行，当运行应用程序并拖放图像时，将看到阈值处理的效果：
+
+![](doc/img/cb0aa492-12bc-40b2-95bf-0bca6581bb29.png)
+
+尝试将最后一步中的 `QCustomGraphicsEffect` 替换为 Qt 提供的任一特效类（如 `QGraphicsBlurEffect`），观察不同效果。可见这些类为图形特效提供了极高的灵活性。
+
+接下来继续介绍 `QGraphicsItem` 类的其他函数和属性：
+
+- `group` 和 `setGroup` 函数用于将项加入组或获取包含该项的组（若存在）。`QGraphicsItemGroup` 类负责处理组，如本章前文所述。
+- `isAncestorOf` 函数用于检查该项是否为另一项的祖先（父项或其父项递归）。
+- `setParentItem` 和 `parentItem` 用于设置或获取当前项的父项。若无父项，`parentItem` 返回空指针。
+- `isSelected` 和 `setSelected` 函数用于设置项的选中状态，与 `QGraphicsScene` 的 `setSelectionArea` 等功能紧密相关。
+- 坐标映射函数组（共12个核心函数）：
+  - `mapFromItem`, `mapToItem`
+  - `mapFromParent`, `mapToParent`
+  - `mapFromScene`, `mapToScene`
+  - `mapRectFromItem`, `mapRectToScene`
+  - `mapRectFromParent`, `mapRectToParent`
+  - `mapRectFromScene`, `mapRectToScene`
+  
+  这些函数用于坐标系转换。每个项和场景都有自己的坐标系系统，当项之间存在父子层级时尤其需要坐标转换。参考下图理解：
+
+![](doc/img/c52b657c-957b-46c3-af3b-b4a0f551c1d9.png)
+
+假设**场景 Scene **为主坐标系（世界坐标系），**父项**在场景中的坐标为 (D, E)，其子项**子项1**在父项局部坐标系中坐标为 (F, G)，**子项2**为 (H, I)。当层级复杂时，映射函数至关重要。以下是代码示例：
+
+```cpp
+QGraphicsRectItem *item = new QGraphicsRectItem(0,0,100,100);
+item->setPos(50,400); 
+scene.addItem(item); 
+
+// 创建父项（作为 scene 的子项）
+QGraphicsRectItem *parentItem = new QGraphicsRectItem(0, 0,  320, 240); 
+parentItem->setPos(300, 50); 
+scene.addItem(parentItem); 
+
+QGraphicsRectItem *childItem1 = new QGraphicsRectItem(0, 0, 50, 50, parentItem); 
+childItem1->setPos(50,50); 
+QGraphicsRectItem *childItem2 = new QGraphicsRectItem(0, 0, 75, 75, parentItem); 
+childItem2->setPos(150,75); 
+
+qDebug() << item->mapFromItem(childItem1, 0,0);	// QPointF(300,-300) 
+qDebug() << item->mapToItem(childItem1, 0,0);   // QPointF(-300,300) 
+
+qDebug() << childItem1->mapFromScene(0,0);	// QPointF(-350,-100) 
+qDebug() << childItem1->mapToScene(0,0);    // QPointF(350,100) 
+
+qDebug() << childItem2->mapFromParent(0,0); // QPointF(-150,-75) 
+qDebug() << childItem2->mapToParent(0,0);   // QPointF(150,75) 
+
+qDebug() << item->mapRectFromItem(childItem1, childItem1->rect());  // QRectF(300,-300 50x50) 
+qDebug() << item->mapRectToItem(childItem1, childItem1->rect());    // QRectF(-300,300 50x50) 
+
+qDebug() << childItem1->mapRectFromScene(0,0, 25, 25);  // QRectF(-350,-100 25x25) 
+qDebug() << childItem1->mapRectToScene(0,0, 25, 25);    // QRectF(350,100 25x25) 
+
+qDebug() << childItem2->mapRectFromParent(0,0, 30, 30); // QRectF(-150,-75 30x30) 
+qDebug() << childItem2->mapRectToParent(0,0, 25, 25);   // QRectF(150,75 25x25) 
+```
+
+试着在 Qt Creator 和 Qt Widgets 项目中运行前面的代码，你会在 Qt Creator 的应用程序输出窗格中看到下面的内容，这基本上就是 qDebug() 语句的结果。
+
+让我们试着看看产生第一个结果的指令：
+
+```cpp
+item->mapFromItem(childItem1, 0,0); 
+```
+
+假设某个项在场景中的位置为 (50,400)，而 `childItem1` 在父项中的位置为 (50,50)。以下代码将 `childItem1` 坐标系中的 (0,0) 转换为父项的坐标系。可通过类似代码验证其他坐标转换函数，这在移动场景项或进行变换时极为实用：
+
+- `moveBy`、`pos`、`setPos`、`x`、`setX`、`y`、`setY`、`rotation`、`setRotation`、`scale` 和 `setScale` 函数用于获取或设置项的几何属性。注意 `pos` 与 `mapToParent(0,0)` 返回值相同，可通过示例代码验证。
+
+- `transform`、`setTransform`、`setTransformOriginPoint` 和 `resetTransform` 函数用于应用或获取项的**几何变换**。所有变换默认以原点 (0,0) 为基准，可通过 `setTransformOriginPoint` 修改变换原点。
+- `scenePos` 函数获取项**在场景中的位置**，等同于 `mapToScene(0,0)`。可在前述示例中验证结果。
+- `data` 和 `setData` 函数用于存储/检索项的任意自定义数据。例如，可为 `QGraphicsPixmapItem` 存储图像路径或其他关联信息。
+- `zValue` 和 `setZValue` 函数控制项的 Z 值。Z 值决定绘制顺序，值越大越靠前显示。
+
+
+
+与 `QGraphicsScene` 类似，`QGraphicsItem` 也提供多个可重写的保护虚函数，主要用于处理场景传递的事件。重要示例包括：
+
+- `contextMenuEvent`（上下文菜单事件）
+- `dragEnterEvent`、`dragLeaveEvent`、`dragMoveEvent`、`dropEvent`（拖放事件）
+- `focusInEvent`、`focusOutEvent`（焦点事件）
+- `hoverEnterEvent`、`hoverLeaveEvent`、`hoverMoveEvent`（悬停事件）
+- `keyPressEvent`、`keyReleaseEvent`（键盘事件）
+- `mouseDoubleClickEvent`、`mouseMoveEvent`、`mousePressEvent`、`mouseReleaseEvent`、`wheelEvent`（鼠标/滚轮事件）
+
+
+
+# 视图，QGraphicsView
+
+我们已进入Qt图形视图框架的最后部分。`QGraphicsView`类是一个Qt Widget类，可放置在窗口上用于显示`QGraphicsScene`（场景本身包含多个`QGraphicsItem`子类和/或部件）。与`QGraphicsScene`类类似，该类也提供了大量处理图形可视化的方法、属性和功能。我们将在以下列表中回顾其中最重要的部分，然后学习如何子类化`QGraphicsView`并扩展其功能，为我们的综合计算机视觉应用添加缩放、项选择等重要能力。以下是计算机视觉项目中需要用到的`QGraphicsView`类方法和成员：
+
+-   `alignment`和`setAlignment`函数可用于设置场景在视图中的对齐方式。需注意：只有当视图能完整显示场景且仍有剩余空间（视图无需滚动条）时，此设置才会生效。
+-   `dragMode`和`setDragMode`函数用于获取/设置视图的拖拽模式。这是视图最重要的功能之一，决定鼠标左键在视图上点击拖拽时的行为。我们将在后续示例中使用该功能，并通过`QGraphicsView::DragMode`枚举设置不同拖拽模式。
+-   `isInteractive`和`setInteractive`函数用于获取/设置视图的交互性。交互式视图会响应鼠标和键盘事件（若已实现），否则将忽略所有输入事件，仅作为观察场景内容的非交互式视图。
+-   以下函数分别用于获取/设置视图的性能和渲染质量参数，在后续示例项目中我们将实践这些用例：
+    ```cpp
+    optimizationFlags()
+    setOptimizationFlags()
+    renderHints()
+    setRenderHints() 
+    viewportUpdateMode()
+    setViewportUpdateMode()
+    ```
+
+-   `rubberBandSelectionMode`和`setRubberBandSelectionMode`函数用于设置当拖拽模式为`RubberBandDrag`时的项选择模式。可通过`Qt::ItemSelectionMode`枚举设置以下模式：
+    -   `Qt::ContainsItemShape`
+    -   `Qt::IntersectsItemShape`
+    -   `Qt::ContainsItemBoundingRect`
+    -   `Qt::IntersectsItemBoundingRect`
+-   `sceneRect`和`setSceneRect`函数用于获取/设置视图中的场景可视区域。注意：该值不一定与`QGraphicsScene`类的`sceneRect`相同。
+-   `centerOn`函数可确保指定点或项位于视图中心。
+-   `ensureVisible`函数可滚动视图至指定区域（带边距），确保其显示在视图中。支持点、矩形和图形项作为参数。
+-   `fitInView`函数功能与`centerOn`/`ensureVisible`相似，但核心区别在于该函数会缩放视图内容以适应视图显示区域，并可通过以下参数控制宽高比：
+    ```cpp
+    Qt::IgnoreAspectRatio       // 忽略宽高比
+    Qt::KeepAspectRatio        // 保持宽高比
+    Qt::KeepAspectRatioByExpanding  // 通过扩展保持宽高比
+    ```
+-   `itemAt`函数可用于获取视图指定位置的图形项。
+
+---
+
+我们已经了解到场景中的每个元素和场景本身都拥有各自的坐标系，需要通过映射函数在它们之间进行位置转换。视图（View）的情况也是如此。视图同样拥有自己的坐标系，主要区别在于：视图中的位置、矩形等实际上是以像素为度量单位的，因此它们是整数值；而场景和元素的位置等则使用实数。这是因为场景和元素在通过视图显示之前都是逻辑实体，因此当整个（或部分）场景准备在屏幕上显示时，所有实数都会被转换为整数。下图可以帮助你更好地理解这一点：
+
+![](doc/img/fc1db2f4-4a0c-4eaf-b394-7c389c6fdf71.png)
+
+在上图中，视图的中心点实际上位于场景的右上方四分之一区域。**视图**提供了类似的映射函数（与我们之前在元素中看到的类似），用于在场景坐标系和视图坐标系之间进行位置转换。以下是这些函数，以及我们需要了解的**视图**其他剩余函数和方法：
+
+-   `mapFromScene` 和 `mapToScene` 函数可用于在场景坐标系之间进行位置转换。与之前提到的完全一致的是：`mapFromScene` 函数接受实数值并返回整数值，而 `mapToScene` 函数接受整数并返回实数。稍后我们在开发视图的缩放功能时会用到这些函数。
+-   `items` 函数可用于获取场景中的元素列表。
+-   `render` 函数可用于渲染整个视图或其部分区域。该函数的使用方式与 `QGraphicsScene` 中的 `render` 完全相同，只是此函数作用于视图。
+-   `rubberBandRect` 函数可用于获取橡皮筋选择的矩形区域。如前所述，这仅在拖动模式设置为 `RubberBandSelection` 时相关。
+-   `setScene` 和 `scene` 函数可用于为视图设置和获取场景。
+-   `setMatrix`、`setTransform`、`transform`、`rotate`、`scale`、`shear` 和 `translate` 函数都可用于修改或检索视图的几何属性。
+
+```cpp
+// 示例代码：视图的坐标转换使用
+QPoint viewPoint = view->mapFromScene(scenePos);
+QRectF sceneRect = view->mapToScene(viewRect);
+```
 
 
 
