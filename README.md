@@ -4453,16 +4453,17 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 16. **实现图像处理**  
     更新 `processImage` 函数：
     ```cpp
-            int top, bot, left, right; 
-            top = bot = inputImage.rows/2; 
-            left = right = inputImage.cols/2; 
-            cv::copyMakeBorder(inputImage, 
-                outputImage, 
-                top, 
-                bot, 
-                left, 
-                right, 
-            ui->borderTypeComboBox->currentIndex()); 
+    void CopyMakeBorder_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outputImage)
+    {
+        int top = inputImage.rows / 2;
+        int bot = inputImage.rows / 2;
+        int left = inputImage.cols / 2;
+        int right = inputImage.cols / 2;
+    
+        cv::copyMakeBorder(inputImage, outputImage,
+                           top, bot, left, right,
+                           ui->cbBorderType->currentIndex());
+    }
     ```
     调用 `copyMakeBorder` 函数，上下边距为图像高度的一半，左右边距为宽度的一半，边界类型从 GUI 获取。
 

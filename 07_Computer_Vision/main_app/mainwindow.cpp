@@ -1,10 +1,19 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#define PLUGINS_SUBFOLDER                   "/cvplugins/"
-#define LANGUAGES_SUBFOLDER                 "/languages/"
-#define THEMES_SUBFOLDER                    "/themes/"
+#if 1
+
+#define PLUGINS_DIR                         "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/cvplugins"
+#define LANGUAGES_DIR                       "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/languages"
+#define THEMES_DIR                          "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/themes/"
 #define FILE_ON_DISK_DYNAMIC_PROPERTY       "absolute_file_path"
+
+#else
+#define PLUGINS_DIR                 ((qApp->applicationDirPath()) + ("/cvplugins/"))
+#define LANGUAGES_DIR         ((qApp->applicationDirPath()) + ("/languages/"))
+#define THEMES_DIR            ((qApp->applicationDirPath()) + ("/themes/"))
+#define FILE_ON_DISK_DYNAMIC_PROPERTY       "absolute_file_path"
+#endif
 
 #include "../cv_plugin_interface/cv_plugin_interface.h"
 
@@ -36,17 +45,17 @@ MainWindow::~MainWindow()
 void MainWindow::loadSettings()
 {
     QSettings settings("Packt", "Computer_Vision", this);
-    currentThemeFile = settings.value("currentThemeFile", "").toString();
+    currentThemeFile    = settings.value("currentThemeFile",    "").toString();
     currentLanguageFile = settings.value("currentLanguageFile", "").toString();
-    currentPluginFile = settings.value("currentPluginFile", "").toString();
+    currentPluginFile   = settings.value("currentPluginFile",   "").toString();
 }
 
 void MainWindow::saveSettings()
 {
     QSettings settings("Packt", "Computer_Vision", this);
-    settings.setValue("currentThemeFile", currentThemeFile);
-    settings.setValue("currentLanguageFile", currentLanguageFile);
-    settings.setValue("currentPluginFile", currentPluginFile);
+    settings.setValue("currentThemeFile",       currentThemeFile);
+    settings.setValue("currentLanguageFile",    currentLanguageFile);
+    settings.setValue("currentPluginFile",      currentPluginFile);
 }
 
 void MainWindow::changeEvent(QEvent *event)
@@ -75,22 +84,30 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
 }
 
+/**
+ * @brief MainWindow::populatePluginsMenu 加载插件并添加到列表
+ */
 void MainWindow::populatePluginsMenu()
 {
-    // Load all plugins and populate the menus
-    QDir pluginsDir(qApp->applicationDirPath() + PLUGINS_SUBFOLDER);
+    qDebug() << "Search plugins in dir" << PLUGINS_DIR;
+    QDir pluginsDir(PLUGINS_DIR);
+
     QFileInfoList pluginFiles = pluginsDir.entryInfoList(QDir::NoDotAndDotDot | QDir::Files, QDir::Name);
-    foreach(QFileInfo pluginFile, pluginFiles)
+
+    for(QFileInfo curFile : pluginFiles)
     {
-        if(QLibrary::isLibrary(pluginFile.absoluteFilePath()))
-        {
-            QPluginLoader pluginLoader(pluginFile.absoluteFilePath(), this);
-            if(CvPluginInterface *plugin = dynamic_cast<CvPluginInterface*>(pluginLoader.instance()))
+        if(QLibrary::isLibrary(curFile.absoluteFilePath()))
+        {  // 如果是插件
+            QPluginLoader pluginLoader(curFile.absoluteFilePath(), this);
+            CvPluginInterface *plugin = dynamic_cast<CvPluginInterface*>(pluginLoader.instance());
+            if(plugin)
             {
                 QAction *pluginAction = ui->menu_Plugins->addAction(plugin->title());
-                pluginAction->setProperty(FILE_ON_DISK_DYNAMIC_PROPERTY, pluginFile.absoluteFilePath());
-                connect(pluginAction, SIGNAL(triggered(bool)), this, SLOT(onPluginActionTriggered(bool)));
-                if(currentPluginFile == pluginFile.absoluteFilePath())
+                pluginAction->setProperty(FILE_ON_DISK_DYNAMIC_PROPERTY, curFile.absoluteFilePath());  // 为菜单项添加一个自定义的动态属性 FILE_ON_DISK_DYNAMIC_PROPERTY，存储当前插件文件的绝对路径（curFile.absoluteFilePath()）
+
+                connect(pluginAction, &QAction::triggered, this, &MainWindow::onPluginActionTriggered);
+
+                if(currentPluginFile == curFile.absoluteFilePath())
                 {
                     pluginAction->trigger();
                 }
@@ -99,7 +116,7 @@ void MainWindow::populatePluginsMenu()
             {
                 QMessageBox::warning(this, tr("Warning"),
                                      QString(tr("Make sure %1 is a correct plugin for this application<br>"
-                                                "and it's not in use by some other application!")).arg(pluginFile.fileName()));
+                                                "and it's not in use by some other application!")).arg(curFile.fileName()));
             }
         }
         else
@@ -107,8 +124,8 @@ void MainWindow::populatePluginsMenu()
             QMessageBox::warning(this, tr("Warning"),
                                  QString(tr("Make sure only plugins exist in %1 folder.<br>"
                                             "%2 is not a plugin."))
-                                     .arg(PLUGINS_SUBFOLDER)
-                                     .arg(pluginFile.fileName()));
+                                     .arg(PLUGINS_DIR)
+                                     .arg(curFile.fileName()));
         }
     }
 
@@ -117,27 +134,30 @@ void MainWindow::populatePluginsMenu()
         QMessageBox::critical(this, tr("No Plugins"), QString(tr("This application cannot work without plugins!"
                                                                  "<br>Make sure that %1 folder exists "
                                                                  "in the same folder as the application<br>and that "
-                                                                 "there are some filter plugins inside it")).arg(PLUGINS_SUBFOLDER));
+                                                                 "there are some filter plugins inside it")).arg(PLUGINS_DIR));
         this->setEnabled(false);
     }
 }
 
 void MainWindow::populateLanguagesMenu()
 {
+    qDebug() << "Search Languages in dir" << LANGUAGES_DIR;
     QMenu *languagesMenu = new QMenu(this);
+
     // Add default (english) language
     QAction *defaultLanguageAction = languagesMenu->addAction("English - US");
     defaultLanguageAction->setProperty(FILE_ON_DISK_DYNAMIC_PROPERTY, "");
-    connect(defaultLanguageAction, SIGNAL(triggered(bool)), this, SLOT(onLanguageActionTriggered(bool)));
+    connect(defaultLanguageAction, &QAction::triggered, this, &MainWindow::onLanguageActionTriggered);
 
     // Load all languages and populate the menus
-    QDir languagesDir(qApp->applicationDirPath() + LANGUAGES_SUBFOLDER);
-    QFileInfoList languageFiles = languagesDir.entryInfoList(QStringList() << "*.qm", QDir::NoDotAndDotDot | QDir::Files, QDir::Name);
+    QDir languagesDir(LANGUAGES_DIR);
+    QFileInfoList languageFiles = languagesDir.entryInfoList(QStringList() << "*.qm",
+                                                             QDir::NoDotAndDotDot | QDir::Files, QDir::Name);
     foreach(QFileInfo languageFile, languageFiles)
     {
         QAction *languageAction = languagesMenu->addAction(languageFile.baseName());
         languageAction->setProperty(FILE_ON_DISK_DYNAMIC_PROPERTY, languageFile.absoluteFilePath());
-        connect(languageAction, SIGNAL(triggered(bool)), this, SLOT(onLanguageActionTriggered(bool)));
+        connect(languageAction, &QAction::triggered, this, &MainWindow::onLanguageActionTriggered);
 
         if(currentLanguageFile == languageFile.absoluteFilePath())
         {
@@ -149,20 +169,22 @@ void MainWindow::populateLanguagesMenu()
 
 void MainWindow::populateThemesMenu()
 {
+    qDebug() << "Search Themes in dir" << THEMES_DIR;
+
     QMenu *themesMenu = new QMenu(this);
     // Add default (native) theme
     QAction *defaultThemeAction = themesMenu->addAction("Default");
     defaultThemeAction->setProperty(FILE_ON_DISK_DYNAMIC_PROPERTY, "");
-    connect(defaultThemeAction, SIGNAL(triggered(bool)), this, SLOT(onThemeActionTriggered(bool)));
+    connect(defaultThemeAction, &QAction::triggered, this, &MainWindow::onThemeActionTriggered);
 
     // Load all themes and populate the menus
-    QDir themesDir(qApp->applicationDirPath() + THEMES_SUBFOLDER);
+    QDir themesDir(THEMES_DIR);
     QFileInfoList themeFiles = themesDir.entryInfoList(QStringList() << "*.thm", QDir::NoDotAndDotDot | QDir::Files, QDir::Name);
     foreach(QFileInfo themeFile, themeFiles)
     {
         QAction *themeAction = themesMenu->addAction(themeFile.baseName());
         themeAction->setProperty(FILE_ON_DISK_DYNAMIC_PROPERTY, themeFile.absoluteFilePath());
-        connect(themeAction, SIGNAL(triggered(bool)), this, SLOT(onThemeActionTriggered(bool)));
+        connect(themeAction, &QAction::triggered, this, &MainWindow::onThemeActionTriggered);
 
         if(currentThemeFile == themeFile.absoluteFilePath())
         {

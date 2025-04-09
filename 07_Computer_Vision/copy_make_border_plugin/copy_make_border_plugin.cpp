@@ -56,7 +56,9 @@ void CopyMakeBorder_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &out
     int left = inputImage.cols / 2;
     int right = inputImage.cols / 2;
 
-    cv::copyMakeBorder(inputImage, outputImage, top, bot, left, right, ui->cbBorderType->currentIndex());
+    cv::copyMakeBorder(inputImage, outputImage,
+                       top, bot, left, right,
+                       ui->cbBorderType->currentIndex());
 }
 
 
