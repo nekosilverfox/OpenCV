@@ -10,11 +10,13 @@ CONFIG += c++17
 
 SOURCES += \
     customgraphicseffect.cpp \
+    enhancedgraphicsview.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
     customgraphicseffect.h \
+    enhancedgraphicsview.h \
     mainwindow.h
 
 FORMS += \

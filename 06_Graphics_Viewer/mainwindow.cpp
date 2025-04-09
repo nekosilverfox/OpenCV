@@ -67,6 +67,7 @@ void MainWindow::dropEvent(QDropEvent *event)
     QPixmap pixmap;
     if(pixmap.load(file.absoluteFilePath()))
     {
+        ui->graphicsView->resetTransform();
         scene.clear();
         scene.addItem(new QGraphicsPixmapItem(pixmap));
         ui->graphicsView->fitInView(scene.sceneRect(), Qt::KeepAspectRatio);
@@ -79,7 +80,7 @@ void MainWindow::dropEvent(QDropEvent *event)
     }
 
 // 简单的阈值滤镜
-#if 1
+#if 0
     QGraphicsPixmapItem *item = new QGraphicsPixmapItem(pixmap);
     item->setGraphicsEffect(new CustomGraphicsEffect(this));
     // item->setGraphicsEffect(new QGraphicsBlurEffect(this));

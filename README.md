@@ -3910,5 +3910,133 @@ QRectF sceneRect = view->mapToScene(viewRect);
 
 
 
+与 `QGraphicsScene` 和 `QGraphicsItem` 类相同，`QGraphicsView` 也提供了许多相同的受保护虚成员，可用于进一步扩展视图的功能。现在我们将扩展 `Graphics_Viewer` 示例项目，以支持更多元素、元素选择、元素删除和缩放功能。在此过程中，我们将回顾本章学习的视图、场景和元素的一些最重要用例。让我们开始实施：
+
+1. 首先在 Qt Creator 中打开 `Graphics_Viewer` 项目；然后从主菜单中选择 "New File or Project"，在新建文件或项目窗口中选择 C++ 和 C++ Class，点击 "Choose" 按钮。
+
+2. 确保输入 `QEnhancedGraphicsView` 作为类名，并选择 `QWidget` 作为基类。同时勾选 "Include QWidget" 复选框（如果未勾选）。点击 "Next"，然后点击 "Finish"。
+
+3. 在 `qenhancedgraphicsview.h` 头文件中添加以下包含语句：
+
+    ```cpp
+    #include <QGraphicsView> 
+    ```
+
+4. 确保 `QEnhancedGraphicsView` 类继承自 `QGraphicsView` 而不是 `QWidget`（在 `qenhancedgraphicsview.h` 文件中），如下所示：
+
+    ```cpp
+    class QEnhancedGraphicsView : public QGraphicsView 
+    ```
+
+    
+
+5. 需要按以下方式修正 `QEnhancedGraphicsView` 类的构造函数实现（在 `qenhancedgraphicsview.cpp` 文件中）：
+
+    ```cpp
+    QEnhancedGraphicsView::QEnhancedGraphicsView(QWidget
+       *parent) 
+     : QGraphicsView(parent) 
+    { 
+    } 
+    ```
+
+    
+
+6. 现在在 `qenhancedgraphicsview.h` 文件的增强视图类定义中添加以下受保护成员：
+
+        protected: 
+          void wheelEvent(QWheelEvent *event);
+
+7. 按照以下代码块将其实现添加到 `qenhancedgraphicsview.cpp` 文件：
+
+    ```cpp
+    void QEnhancedGraphicsView::wheelEvent(QWheelEvent *event) 
+    { 
+      if (event->angleDelta().y() != 0) 
+      { 
+        double angleDeltaY = event->angleDelta().y(); 
+        double zoomFactor = qPow(1.0015, angleDeltaY); 
+        scale(zoomFactor, zoomFactor); 
+        this->viewport()->update(); 
+        event->accept(); 
+      } 
+      else 
+      { 
+        event->ignore(); 
+      } 
+    } 
+    ```
+
+    需要确保 `QWheelEvent` 和 `QtMath` 已包含在类源文件中，否则会遇到 `qPow` 函数和 `QWheelEvent` 类的编译错误。上述代码逻辑清晰——首先检查鼠标滚轮事件方向，然后根据滚轮移动量应用 X/Y 轴缩放，最后更新视口确保重绘。
+8. 现在需要通过 Qt Creator 的设计模式提升窗口中的 `graphicsView` 对象：右键点击选择 "Promote To"，输入 `QEnhancedGraphicsView` 作为提升类名，点击 "Add" 按钮，最后点击 "Promote" 按钮。（此提升操作与之前示例相同）由于 `QGraphicsView` 和 `QEnhancedGraphicsView` 是兼容的（前者是后者的父类），我们可以将父类提升为子类，或在不需要时降级。提升本质上是将控件转换为其子控件以支持更多功能。
+
+9. 需要在 `mainwindow.cpp` 的 `dropEvent` 函数顶部添加以下代码，确保加载新图像时重置缩放级别（具体是缩放变换）：
+
+    ```cpp
+    ui->graphicsView->resetTransform(); 
+    ```
+
+
+
+现在可以启动应用程序并尝试使用鼠标滚轮进行滚动。当向上或向下滚动滚轮时，可以看到缩放级别的变化。以下是应用程序对图像进行放大和缩小的效果截图：
+
+![](doc/img/1f9a24f3-3ad9-408a-aa5a-1a6815e21b48.png)
+
+若进一步测试，会发现缩放始终以图像中心为基准，这种体验非常怪异且不舒适。要解决此问题，我们需要利用本章学到的更多技巧和函数：
+
+1. 首先在增强视图类中添加另一个受保护的私有函数。除了之前使用的 `wheelEvent`，我们还将利用 `mouseMoveEvent`。在 `qenhancedgraphicsview.h` 文件的受保护成员部分添加以下代码：
+
+    ```
+    void mouseMoveEvent(QMouseEvent *event); 
+    ```
+
+2. 同时添加如下私有成员：
+
+    ```cpp
+    private: 
+      QPointF sceneMousePos; 
+    ```
+
+    
+
+3. 现在转到实现部分，将以下代码添加到 `qenhancedgraphicsview.cpp` 文件：
+
+    ```cpp
+    void QEnhancedGraphicsView::mouseMoveEvent(QMouseEvent *event) 
+    { 
+     sceneMousePos = this->mapToScene(event->pos()); 
+    }
+    ```
+
+    
+
+4. 还需略微调整 `wheelEvent` 函数，使其如下所示：
+```cpp
+void EnhancedGraphicsView::wheelEvent(QWheelEvent *event)
+{
+    if (event->angleDelta().y() != 0)
+    {
+        double angleDeltaY = event->angleDelta().y();
+        double zoomFactor = qPow(1.0015, angleDeltaY);
+        scale(zoomFactor, zoomFactor);
+
+        if(angleDeltaY > 0)
+        {
+            this->centerOn(sceneMousePos);
+            sceneMousePos = this->mapToScene(event->position().toPoint());
+        }
+
+        this->viewport()->update();
+        event->accept();
+    }
+    else
+    {
+        event->ignore();
+    }
+}
+```
+
+通过函数名即可理解其逻辑：我们实现 `mouseMoveEvent` 捕获鼠标位置（以场景View坐标系为准，这非常重要），确保放大（非缩小）操作后视图将采集的点置于屏幕中心，最后更新位置以实现更舒适的缩放体验。需注意：此类细节缺陷或功能的处理方式，将直接影响用户使用应用的舒适度，最终成为应用成败的关键参数之一。
+
 
 
