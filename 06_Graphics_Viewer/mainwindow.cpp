@@ -20,7 +20,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     setAcceptDrops(true);
     ui->graphicsView->setAcceptDrops(false);  // 禁止视图自身接收拖放
-    ui->graphicsView->setScene(&scene);      // 将场景绑定到视图
+    ui->graphicsView->setScene(&scene);         // 将场景绑定到视图
+
+    // 设置 QGraphicsView 允许用户通过鼠标和键盘与场景中的图元（QGraphicsItem）交互
+    ui->graphicsView->setInteractive(true);
+
+    // RubberBandDrag 是一种拖拽模式，允许用户通过按住鼠标左键并拖拽，在视图中绘制一个矩形区域（橡皮筋），释放鼠标后会自动选中该区域内所有符合条件的图元。
+    ui->graphicsView->setDragMode(QGraphicsView::RubberBandDrag);
+
+    // 设置橡皮筋选择的条件为“完全包含图元形状”。
+    ui->graphicsView->setRubberBandSelectionMode(Qt::ContainsItemShape);
 }
 
 MainWindow::~MainWindow()
@@ -78,6 +87,8 @@ void MainWindow::dropEvent(QDropEvent *event)
         qDebug() << "viewPos" << viewPos << "\tsceneDropPos" << sceneDropPos;
 
         QGraphicsPixmapItem *item = new QGraphicsPixmapItem(pixmap);
+        item->setFlag(QGraphicsItem::ItemIsSelectable);  // 图元可选中
+        item->setAcceptedMouseButtons(Qt::LeftButton);   // 左键选中
         scene.addItem(item);
         item->setPos(sceneDropPos);
         ui->graphicsView->fitInView(scene.sceneRect(), Qt::KeepAspectRatio);

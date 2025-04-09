@@ -3900,7 +3900,7 @@ item->mapFromItem(childItem1, 0,0);
 >
 > - **默认位置**：QGraphicsScene的原点始终位于其自身坐标系中的`(0, 0)`。
 > - **场景范围（sceneRect）**：
->     - 若未显式设置`sceneRect`，Qt会自动计算一个**包含所有图元的最小矩形作为场景范围**。此时原点可能在场景的左下角或左上角，具体取决于图元的布局。
+>     - 若未显式设置`sceneRect`，Qt会自动计算一个==**包含所有图元的最小矩形作为场景范围**==。此时原点可能在场景的左下角或左上角，具体取决于图元的布局
 >     - 若手动设置`sceneRect`（如`setSceneRect(0, 0, width, height)`），原点固定为`(0, 0)`，场景范围由此矩形定义。
 >
 > 2. **QGraphicsView的视口坐标**
@@ -4108,4 +4108,189 @@ void EnhancedGraphicsView::wheelEvent(QWheelEvent *event)
 至此无需其他修改。启动 Graphics_Viewer 应用程序并尝试拖入图像。加载首张图像后，尝试缩小视图并继续添加更多图像（注意：避免过量测试导致内存耗尽，否则可能引发系统问题或程序崩溃）。下图展示了在场景不同位置拖放多个图像的效果：
 
 <img src="doc/img/376494ed-9341-4a3e-9e44-e3296a513383.png" style="zoom:67%;" />
+
+---
+
+显然当前应用程序仍缺乏许多功能，但本章将涵盖一些关键能力，其余功能留待读者自行探索。当前缺失的重要功能包括：无法选择元素、删除元素或对其应用特效。我们将一次性为 `Graphics_Viewer` 应用程序实现这些基础但关键的功能。后续章节中，我们会在综合计算机视觉项目（名为 `Computer_Vision`）中使用本章所学技术。以下是 `Graphics_Viewer` 项目的最终功能补充步骤：
+
+1. 首先在增强的图形视图类 enhanced graphics view class 中添加以下受保护成员：
+
+    ```
+    void mousePressEvent(QMouseEvent *event); 
+    ```
+
+    
+
+2. 接着在同类定义中添加以下私有槽函数：
+
+    ```cpp
+    private slots: 
+      void clearAll(bool); 
+      void clearSelected(bool); 
+      void noEffect(bool); 
+      void blurEffect(bool); 
+      void dropShadowEffect(bool); 
+      void colorizeEffect(bool); 
+      void customEffect(bool); 
+    ```
+
+    
+
+3. 将所有必要实现添加到视图类源文件（`qenhancedgraphicsview.cpp`）。从 `mousePressEvent` 的实现开始：
+```cpp
+void QEnhancedGraphicsView::mousePressEvent(QMouseEvent *event) 
+{ 
+    {
+        QMenu menu;
+        QAction *clearAllAction = menu.addAction("Clear All");
+        connect(clearAllAction, &QAction::triggered, this, &EnhancedGraphicsView::clearAll);
+
+        QAction *clearSelectedAction = menu.addAction("Clear Selected");
+        connect(clearSelectedAction, &QAction::triggered, this, &EnhancedGraphicsView::clearSelected);
+
+        QAction *noEffectAction = menu.addAction("No Effect");
+        connect(noEffectAction, &QAction::triggered, this, &EnhancedGraphicsView::noEffect);
+
+        QAction *blurEffectAction = menu.addAction("Blur Effect");
+        connect(blurEffectAction, &QAction::triggered, this, &EnhancedGraphicsView::blurEffect);
+
+        QAction *dropShadowEffectAction = menu.addAction("Drop Shadow Effect");
+        connect(dropShadowEffectAction, &QAction::triggered, this, &EnhancedGraphicsView::dropShadowEffect);
+
+        QAction *colorizeEffectAction = menu.addAction("Colorize Effect");
+        connect(colorizeEffectAction, &QAction::triggered, this, &EnhancedGraphicsView::colorizeEffect);
+
+        QAction *customEffectAction = menu.addAction("Custom Effect");
+        connect(customEffectAction, &QAction::triggered, this, &EnhancedGraphicsView::customEffect);
+
+        menu.exec(event->globalPos());
+        event->accept();
+    }
+    else
+    {
+        QGraphicsView::mousePressEvent(event);  // 向上传递
+    }
+} 
+```
+
+上述代码通过右键菜单创建上下文操作，并将每个操作连接到后续添加的槽函数
+
+4. 添加槽函数的实现（其余槽函数按相同模式扩展）：
+
+    ```cpp
+    void EnhancedGraphicsView::clearAll(bool)
+    {
+        scene()->clear();
+    }
+    
+    void EnhancedGraphicsView::clearSelected(bool)
+    {
+        while(scene()->selectedItems().count() > 0)
+        {
+            delete scene()->selectedItems().at(0);
+            scene()->selectedItems().removeAt(0);
+        }
+    }
+    
+    void EnhancedGraphicsView::noEffect(bool)
+    {
+        foreach(QGraphicsItem *item, scene()->selectedItems())
+        {
+            item->setGraphicsEffect(Q_NULLPTR);
+        }
+    }
+    
+    #include <QGraphicsBlurEffect>
+    void EnhancedGraphicsView::blurEffect(bool)
+    {
+        foreach(QGraphicsItem *item, scene()->selectedItems())
+        {
+            item->setGraphicsEffect(new QGraphicsBlurEffect(this));
+        }
+    }
+    
+    #include <QGraphicsDropShadowEffect>
+    void EnhancedGraphicsView::dropShadowEffect(bool)
+    {
+        for (auto i : scene()->selectedItems())
+        {
+            i->setGraphicsEffect(new QGraphicsDropShadowEffect(this));
+        }
+    }
+    
+    #include <QGraphicsColorizeEffect>
+    void EnhancedGraphicsView::colorizeEffect(bool)
+    {
+        for (auto i : scene()->selectedItems())
+        {
+            i->setGraphicsEffect(new QGraphicsColorizeEffect(this));
+        }
+    }
+    
+    void EnhancedGraphicsView::customEffect(bool)
+    {
+    
+    }
+    ```
+
+    
+
+5. 在测试前需完成以下配置：确保增强视图类支持交互和点击拖拽选择。在 `mainwindow.cpp` 的构造函数中添加：
+
+    ```cpp
+    // 设置 QGraphicsView 允许用户通过鼠标和键盘与场景中的图元（QGraphicsItem）交互
+    ui->graphicsView->setInteractive(true);
+    
+    // RubberBandDrag 是一种拖拽模式，允许用户通过按住鼠标左键并拖拽，在视图中绘制一个矩形区域（橡皮筋），释放鼠标后会自动选中该区域内所有符合条件的图元。
+    ui->graphicsView->setDragMode(QGraphicsView::RubberBandDrag);
+    
+    // 设置橡皮筋选择的条件为“完全包含图元形状”。
+    ui->graphicsView->setRubberBandSelectionMode(Qt::ContainsItemShape);
+    ```
+
+    另外还需要再自定义 `QEnhancedGraphicsView` 中 `mouseMoveEvent` 的方法中，设置将**事件继续传递给父类**，否则会导致橡皮筋的拖拽过程会被中断
+
+    ```cpp
+    void QEnhancedGraphicsView::mouseMoveEvent(QMouseEvent *event)
+    {
+        sceneMousePos = this->mapToScene(event->pos());
+      
+        QGraphicsView::mouseMoveEvent(event);  // QGraphicsView 的默认 mouseMoveEvent 负责处理橡皮筋拖拽过程中的矩形绘制和选择逻辑。如果未调用基类方法，橡皮筋的拖拽过程会被中断。
+    }
+    ```
+
+    
+
+6. 最后在 `mainwindow.cpp` 的 `dropEvent` 函数中添加代码，确保元素可选中：
+
+        item->setFlag(QGraphicsItem::ItemIsSelectable); 
+        item->setAcceptedMouseButtons(Qt::LeftButton);
+
+完成上述步骤后，`Graphics_Viewer` 应用程序已支持特效添加和元素操作。下图展示了橡皮筋选择模式的效果：
+
+<img src="doc/img/221f1f37-dd44-44cb-99ae-1d397a2895f4.png" alt="img" style="zoom:67%;" />
+
+下图展示了应用程序为场景中的图像添加不同特效的效果：
+
+<img src="doc/img/8b4e6dc5-a618-4d1b-8c15-1a500a9c672c.png" alt="img" style="zoom:67%;" />
+
+至此，我们成功构建了一个功能强大的图形查看器，可集成到后续章节的 `Computer_Vision` 项目中（用于学习更多 OpenCV 和 Qt 技术）。完整项目代码可通过以下链接下载：
+
+https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch05/computer_vision16
+
+如我们在前几章反复强调的，本项目的目标是帮助我们专注于计算机视觉主题，同时处理所有必需的 GUI 功能、多语言支持、主题样式等。该项目完整整合了迄今所学的全部知识，是一个支持样式自定义、多语言扩展和插件化开发的应用程序。它还将本章所学内容封装成一个强大的图形查看器，我们将在后续章节持续使用。请务必在继续学习后续章节前下载该项目。
+
+`Computer_Vision` 项目采用 Qt 多项目结构（更准确说是子目录项目类型），包含两个子项目：`mainapp`（主应用）和 `template_plugin`（插件模板）。您可以通过复制/克隆并替换代码和 GUI 文件来创建与 `Computer_Vision` 项目兼容的新插件。这正是我们将在[第 6 章](#e4effd35-71cb-4b71-a945-62bce820a80e.xhtml)《OpenCV 图像处理》中进行的操作——针对所学的 OpenCV 技能创建对应的插件。该项目还包含示例语言包和主题包，可通过简单复制修改来创建新的语言和主题。
+
+请务必仔细阅读整个下载的源代码，确保完全理解 `Computer_Vision` 项目源码的所有细节。此项目旨在将所有知识点整合到一个综合性强、可复用的示例项目中。
+
+
+
+
+
+
+
+
+
+
 

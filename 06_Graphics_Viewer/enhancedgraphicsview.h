@@ -13,7 +13,16 @@ public:
 protected:
     void wheelEvent(QWheelEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
+    void mousePressEvent(QMouseEvent *event);
 
+private slots:
+    void clearAll(bool);
+    void clearSelected(bool);
+    void noEffect(bool);
+    void blurEffect(bool);
+    void dropShadowEffect(bool);
+    void colorizeEffect(bool);
+    void customEffect(bool);
 
 signals:
 
