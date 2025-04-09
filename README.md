@@ -3790,8 +3790,8 @@ childItem1->setPos(50,50);
 QGraphicsRectItem *childItem2 = new QGraphicsRectItem(0, 0, 75, 75, parentItem); 
 childItem2->setPos(150,75); 
 
-qDebug() << item->mapFromItem(childItem1, 0,0);	// QPointF(300,-300) 
-qDebug() << item->mapToItem(childItem1, 0,0);   // QPointF(-300,300) 
+qDebug() << item->mapFromItem(childItem1, 0,0);	// QPointF(300,-300) 以 item 为原点
+qDebug() << item->mapToItem(childItem1, 0,0);   // QPointF(-300,300) 以 childItem1 为原点
 
 qDebug() << childItem1->mapFromScene(0,0);	// QPointF(-350,-100) 
 qDebug() << childItem1->mapToScene(0,0);    // QPointF(350,100) 
@@ -3875,7 +3875,6 @@ item->mapFromItem(childItem1, 0,0);
     -   `Qt::ContainsItemBoundingRect` 拖拽框完全包含项的边界矩形时才选中
     -   `Qt::IntersectsItemBoundingRect  ` 拖拽框与项的边界矩形有交集时选中
     
-    
 -   `sceneRect`和`setSceneRect`函数用于获取/设置视图中的场景可视区域。注意：该值不一定与`QGraphicsScene`类的`sceneRect`相同。
 -   `centerOn`函数可确保指定点或项位于视图中心。
 -   `ensureVisible`函数可滚动视图至指定区域（带边距），确保其显示在视图中。支持点、矩形和图形项作为参数。
@@ -3893,9 +3892,37 @@ item->mapFromItem(childItem1, 0,0);
 
 ![](doc/img/fc1db2f4-4a0c-4eaf-b394-7c389c6fdf71.png)
 
+> [!note]
+>
+> 在Qt的图形视图框架中，QGraphicsScene的原点及其与QGraphicsView的坐标关系可总结如下：
+>
+> 1. **QGraphicsScene的原点**
+>
+> - **默认位置**：QGraphicsScene的原点始终位于其自身坐标系中的`(0, 0)`。
+> - **场景范围（sceneRect）**：
+>     - 若未显式设置`sceneRect`，Qt会自动计算一个**包含所有图元的最小矩形作为场景范围**。此时原点可能在场景的左下角或左上角，具体取决于图元的布局。
+>     - 若手动设置`sceneRect`（如`setSceneRect(0, 0, width, height)`），原点固定为`(0, 0)`，场景范围由此矩形定义。
+>
+> 2. **QGraphicsView的视口坐标**
+>
+> - **视口原点**：视口（View的可见区域）的左上角为`(0, 0)`，向右为X轴正方向，向下为Y轴正方向。
+> - **坐标映射**：
+>     - 通过`mapToScene()`可将视口坐标转换为场景坐标。
+>     - 通过`mapFromScene()`可将场景坐标转换为视口坐标。
+>
+> 3. **Scene原点在View中的位置**
+>
+> - **依赖因素**：
+>     1. **视图变换**：缩放、旋转或平移操作会改变Scene内容在View中的显示位置。
+>     2. **对齐方式**：通过`setAlignment()`设置对齐方式。默认（`Qt::AlignCenter`）场景内容居中显示，此时Scene的`(0, 0)`位于View中心。若设为`Qt::AlignTop | Qt::AlignLeft`，则Scene原点对齐到View左上角。
+>     3. **场景矩形**：若场景内容较小且未设置对齐方式，View可能自动调整显示区域。
+
 在上图中，视图View 的中心点实际上位于场景Scene 的右上方四分之一区域。**视图**提供了类似的映射函数（与我们之前在元素中看到的类似），用于在场景坐标系和视图坐标系之间进行位置转换。以下是这些函数，以及我们需要了解的**视图**其他剩余函数和方法：
 
--   `mapFromScene` 和 `mapToScene` 函数可用于在场景坐标系之间进行位置转换。与之前提到的完全一致的是：`mapFromScene` 函数接受实数值并返回整数值，而 `mapToScene` 函数接受整数并返回实数。稍后我们在开发视图的缩放功能时会用到这些函数。
+-   `mapFromScene` 和 `mapToScene` 函数可用于在场景坐标系之间进行位置转换。与之前提到的完全一致的是：
+    -   `mapFromScene` 函数接受实数值并返回整数值，
+    -   而 `mapToScene` 函数接受整数并返回实数。稍后我们在开发视图的缩放功能时会用到这些函数。
+
 -   `items` 函数可用于获取场景中的元素列表。
 -   `render` 函数可用于渲染整个视图或其部分区域。该函数的使用方式与 `QGraphicsScene` 中的 `render` 完全相同，只是此函数作用于视图。
 -   `rubberBandRect` 函数可用于获取橡皮筋选择的矩形区域。如前所述，这仅在拖动模式设置为 `RubberBandSelection` 时相关。
@@ -4039,4 +4066,46 @@ void EnhancedGraphicsView::wheelEvent(QWheelEvent *event)
 通过函数名即可理解其逻辑：我们实现 `mouseMoveEvent` 捕获鼠标位置（以场景View坐标系为准，这非常重要），确保放大（非缩小）操作后视图将采集的点置于屏幕中心，最后更新位置以实现更舒适的缩放体验。需注意：此类细节缺陷或功能的处理方式，将直接影响用户使用应用的舒适度，最终成为应用成败的关键参数之一。
 
 
+
+现在我们将为 Graphics_Viewer 应用程序添加更多功能。首先确保应用程序能够处理无限数量的图像：
+
+1. 首先需要确保视图（及场景）在每次拖入新图像后不会清空已有内容。为此，先在 `mainwindow.cpp` 的 `dropEvent` 函数中删除以下代码行：
+
+    ```cpp
+    scene.clear(); 
+    ```
+
+    
+
+2. 同时移除之前在 `dropEvent` 中添加的用于重置缩放的代码行：
+
+    ```cpp
+    ui->graphicsView->resetTransform();
+    ```
+
+    
+
+3. 现在在 `mainwindow.cpp` 的 `dropEvent` 函数起始处添加以下两行代码：
+
+    ```cpp
+    // 将鼠标坐标从 MainWindow 原点转换到 以 graphicsView 为原点
+    QPoint viewPos = ui->graphicsView->mapFromParent(event->pos());
+    
+    // 将鼠标坐标从 graphicsView 原点转换到 以 scene 为原点
+    QPointF sceneDropPos = ui->graphicsView->mapToScene(viewPos);
+    ```
+
+    <img src="doc/img/image-20250409180724564.png" alt="image-20250409180724564" style="zoom:70%;" />
+
+4. 然后确保将元素位置设置为 `sceneDropPos`，如下所示：
+
+    ```cpp
+    item->setPos(sceneDropPos); 
+    ```
+
+    
+
+至此无需其他修改。启动 Graphics_Viewer 应用程序并尝试拖入图像。加载首张图像后，尝试缩小视图并继续添加更多图像（注意：避免过量测试导致内存耗尽，否则可能引发系统问题或程序崩溃）。下图展示了在场景不同位置拖放多个图像的效果：
+
+<img src="doc/img/376494ed-9341-4a3e-9e44-e3296a513383.png" style="zoom:67%;" />
 

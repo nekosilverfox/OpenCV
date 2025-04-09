@@ -67,9 +67,19 @@ void MainWindow::dropEvent(QDropEvent *event)
     QPixmap pixmap;
     if(pixmap.load(file.absoluteFilePath()))
     {
-        ui->graphicsView->resetTransform();
-        scene.clear();
-        scene.addItem(new QGraphicsPixmapItem(pixmap));
+        // ui->graphicsView->resetTransform();
+        // scene.clear();
+
+        // 将鼠标坐标从 MainWindow 原点转换到 以 graphicsView 为原点
+        QPoint viewPos = ui->graphicsView->mapFromParent(event->pos());
+
+        // 将鼠标坐标从 graphicsView 原点转换到 以 scene 为原点
+        QPointF sceneDropPos = ui->graphicsView->mapToScene(viewPos);
+        qDebug() << "viewPos" << viewPos << "\tsceneDropPos" << sceneDropPos;
+
+        QGraphicsPixmapItem *item = new QGraphicsPixmapItem(pixmap);
+        scene.addItem(item);
+        item->setPos(sceneDropPos);
         ui->graphicsView->fitInView(scene.sceneRect(), Qt::KeepAspectRatio);
     }
     else
