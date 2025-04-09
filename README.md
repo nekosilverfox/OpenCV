@@ -3839,28 +3839,43 @@ item->mapFromItem(childItem1, 0,0);
 
 
 
-# 视图，QGraphicsView
+## 视图 QGraphicsView
 
-我们已进入Qt图形视图框架的最后部分。`QGraphicsView`类是一个Qt Widget类，可放置在窗口上用于显示`QGraphicsScene`（场景本身包含多个`QGraphicsItem`子类和/或部件）。与`QGraphicsScene`类类似，该类也提供了大量处理图形可视化的方法、属性和功能。我们将在以下列表中回顾其中最重要的部分，然后学习如何子类化`QGraphicsView`并扩展其功能，为我们的综合计算机视觉应用添加缩放、项选择等重要能力。以下是计算机视觉项目中需要用到的`QGraphicsView`类方法和成员：
+我们已进入Qt图形视图框架的最后部分。`QGraphicsView`类是一个Qt Widget类，可放置在窗口上用于显示`QGraphicsScene`（QGraphicsScene 场景本身包含多个`QGraphicsItem`子类和/或部件）。与`QGraphicsScene`类类似，该类也提供了大量处理图形可视化的方法、属性和功能。我们将在以下列表中回顾其中最重要的部分，然后学习如何子类化`QGraphicsView`并扩展其功能，为我们的综合计算机视觉应用添加缩放、项选择等重要能力。以下是计算机视觉项目中需要用到的`QGraphicsView`类方法和成员：
 
--   `alignment`和`setAlignment`函数可用于设置场景在视图中的对齐方式。需注意：只有当视图能完整显示场景且仍有剩余空间（视图无需滚动条）时，此设置才会生效。
+-   `alignment`和`setAlignment`函数可用于**设置场景在视图中的对齐方式**。需注意：只有当视图能完整显示场景且仍有剩余空间（视图无需滚动条）时，此设置才会生效。
 -   `dragMode`和`setDragMode`函数用于获取/设置视图的拖拽模式。这是视图最重要的功能之一，决定鼠标左键在视图上点击拖拽时的行为。我们将在后续示例中使用该功能，并通过`QGraphicsView::DragMode`枚举设置不同拖拽模式。
 -   `isInteractive`和`setInteractive`函数用于获取/设置视图的交互性。交互式视图会响应鼠标和键盘事件（若已实现），否则将忽略所有输入事件，仅作为观察场景内容的非交互式视图。
 -   以下函数分别用于获取/设置视图的性能和渲染质量参数，在后续示例项目中我们将实践这些用例：
     ```cpp
     optimizationFlags()
     setOptimizationFlags()
+        QGraphicsView::DontSavePainterState: 禁用保存绘画状态的优化。
+        QGraphicsView::IndirectPainting: 使用间接绘制，以提高性能。
+        QGraphicsView::DisableViewportUpdate: 禁用视口更新的优化。
+      
     renderHints()
     setRenderHints() 
+        QPainter::Antialiasing: 启用抗锯齿，平滑图形。
+        QPainter::SmoothPixmapTransform: 启用平滑的位图转换。
+        QPainter::TextAntialiasing: 启用文本抗锯齿。
+        QPainter::HighQualityAntialiasing: 启用高质量的抗锯齿。
+      
     viewportUpdateMode()
     setViewportUpdateMode()
+        QGraphicsView::FullViewportUpdate: 完全重绘视口。
+        QGraphicsView::MinimalViewportUpdate: 仅更新最小区域。
+        QGraphicsView::SmartViewportUpdate: 智能更新视口，根据需要更新区域。
     ```
-
+    
 -   `rubberBandSelectionMode`和`setRubberBandSelectionMode`函数用于设置当拖拽模式为`RubberBandDrag`时的项选择模式。可通过`Qt::ItemSelectionMode`枚举设置以下模式：
-    -   `Qt::ContainsItemShape`
-    -   `Qt::IntersectsItemShape`
-    -   `Qt::ContainsItemBoundingRect`
-    -   `Qt::IntersectsItemBoundingRect`
+    
+    -   `Qt::ContainsItemShape` 当橡皮筋框（拖拽框）完全覆盖了一个项的形状（即其实际图形部分）时，项才会被选中
+    -   `Qt::IntersectsItemShape` 拖拽框与项的形状有交集时选中
+    -   `Qt::ContainsItemBoundingRect` 拖拽框完全包含项的边界矩形时才选中
+    -   `Qt::IntersectsItemBoundingRect  ` 拖拽框与项的边界矩形有交集时选中
+    
+    
 -   `sceneRect`和`setSceneRect`函数用于获取/设置视图中的场景可视区域。注意：该值不一定与`QGraphicsScene`类的`sceneRect`相同。
 -   `centerOn`函数可确保指定点或项位于视图中心。
 -   `ensureVisible`函数可滚动视图至指定区域（带边距），确保其显示在视图中。支持点、矩形和图形项作为参数。
@@ -3878,7 +3893,7 @@ item->mapFromItem(childItem1, 0,0);
 
 ![](doc/img/fc1db2f4-4a0c-4eaf-b394-7c389c6fdf71.png)
 
-在上图中，视图的中心点实际上位于场景的右上方四分之一区域。**视图**提供了类似的映射函数（与我们之前在元素中看到的类似），用于在场景坐标系和视图坐标系之间进行位置转换。以下是这些函数，以及我们需要了解的**视图**其他剩余函数和方法：
+在上图中，视图View 的中心点实际上位于场景Scene 的右上方四分之一区域。**视图**提供了类似的映射函数（与我们之前在元素中看到的类似），用于在场景坐标系和视图坐标系之间进行位置转换。以下是这些函数，以及我们需要了解的**视图**其他剩余函数和方法：
 
 -   `mapFromScene` 和 `mapToScene` 函数可用于在场景坐标系之间进行位置转换。与之前提到的完全一致的是：`mapFromScene` 函数接受实数值并返回整数值，而 `mapToScene` 函数接受整数并返回实数。稍后我们在开发视图的缩放功能时会用到这些函数。
 -   `items` 函数可用于获取场景中的元素列表。
