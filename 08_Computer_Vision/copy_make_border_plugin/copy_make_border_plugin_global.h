@@ -1,0 +1,12 @@
+#ifndef COPY_MAKE_BORDER_GLOBAL_H
+#define COPY_MAKE_BORDER_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(COPY_MAKE_BORDER_LIBRARY)
+#define COPY_MAKE_BORDER_EXPORT Q_DECL_EXPORT
+#else
+#define COPY_MAKE_BORDER_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // COPY_MAKE_BORDER_GLOBAL_H
