@@ -46,13 +46,11 @@ private slots:
     void onLanguageActionTriggered(bool);
     void onThemeActionTriggered(bool);
     void onCurrentPluginUpdateNeeded();
-    void onCurrentPluginErrorMessage(QString msg);
-    void onCurrentPluginInfoMessage(QString msg);
+    void onCurrentPluginErrorMessage(const QString &msg);
+    void onCurrentPluginInfoMessage(const QString &msg);
 
-    void on_actionOpenImage_triggered();
-    void on_viewOriginalCheck_toggled(bool checked);
-    void on_actionSaveImage_triggered();
-    void on_action_Camera_triggered();
+    void importImageByDialog();
+    void exportImageByDialog();
 
 private:
     void loadSettings();

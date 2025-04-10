@@ -30,9 +30,9 @@ public:
     void processImage(const cv::Mat &inputImage, cv::Mat &outputImage) override;
 
 signals:
-    void updateNeeded();
-    void errorMessage(QString msg);
-    void infoMessage(QString msg);
+    // void updateNeeded();
+    // void errorMessage(QString msg);
+    // void infoMessage(QString msg);
 
 private:
     Ui::PluginGui *ui;

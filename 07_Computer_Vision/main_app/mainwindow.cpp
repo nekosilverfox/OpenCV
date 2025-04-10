@@ -41,6 +41,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->actionAboutQt, &QAction::triggered, this, [=](){qApp->aboutQt();});
     connect(ui->actionExit, &QAction::triggered, this, &MainWindow::close);
+    connect(ui->actionOpenImage, &QAction::triggered, this, &MainWindow::importImageByDialog);
+    connect(ui->actionSaveImage, &QAction::triggered, this, &MainWindow::exportImageByDialog);
+    connect(ui->viewOriginalCheck, &QCheckBox::toggled, this, [=](bool checked){
+        originalPixmap.setVisible(checked);
+        processedPixmap.setVisible(!checked);
+    });
+    connect(ui->action_Camera, &QAction::triggered, this, [](){});
+
 }
 
 MainWindow::~MainWindow()
@@ -218,15 +226,15 @@ void MainWindow::onPluginActionTriggered(bool)
 
     currentPluginFile = QObject::sender()->property(FILE_ON_DISK_DYNAMIC_PROPERTY).toString();
     currentPlugin = new QPluginLoader(currentPluginFile, this);
-
-    currentPluginGui = new QWidget(this);
-    ui->pluginLayout->addWidget(currentPluginGui);
+    qDebug() << "Try to load plugin" << currentPluginFile;
 
     // 关键修改点：使用 qobject_cast 替代 dynamic_cast
     CvPluginInterface* currentPluginInstance = qobject_cast<CvPluginInterface*>(currentPlugin->instance());
     if(currentPluginInstance)
     {
-        currentPluginInstance->setupUi(currentPluginGui);
+        currentPluginGui = new QWidget(this);
+        ui->pluginLayout->addWidget(currentPluginGui);
+        currentPluginInstance->setupUi(currentPluginGui);  // currentPluginGui 是 parent
         connect(currentPluginInstance, &CvPluginInterface::updateNeeded, this, &MainWindow::onCurrentPluginUpdateNeeded);
         connect(currentPluginInstance, &CvPluginInterface::infoMessage,  this, &MainWindow::onCurrentPluginInfoMessage);
         connect(currentPluginInstance, &CvPluginInterface::errorMessage, this, &MainWindow::onCurrentPluginErrorMessage);
@@ -262,15 +270,17 @@ void MainWindow::onThemeActionTriggered(bool)
     }
 }
 
-void MainWindow::on_actionOpenImage_triggered()
+/**
+ * @brief MainWindow::importImageByDialog 使用文件对话框来导入图像
+ */
+void MainWindow::importImageByDialog()
 {
     QString fileName = QFileDialog::getOpenFileName(this,
                                                     tr("Open Input Image"),
                                                     QDir::currentPath(),
                                                     tr("Images") + " (*.jpg *.png *.bmp)");
 
-    using namespace cv;
-    originalMat = imread(fileName.toStdString());
+    originalMat = cv::imread(fileName.toStdString());
     if(!originalMat.empty())
     {
         onCurrentPluginUpdateNeeded();
@@ -284,42 +294,7 @@ void MainWindow::on_actionOpenImage_triggered()
     }
 }
 
-void MainWindow::on_viewOriginalCheck_toggled(bool checked)
-{
-    originalPixmap.setVisible(checked);
-    processedPixmap.setVisible(!checked);
-}
-
-void MainWindow::onCurrentPluginUpdateNeeded()
-{
-    if(!originalMat.empty())
-    {
-        if(!currentPlugin.isNull())
-        {
-            CvPluginInterface *currentPluginInstance = dynamic_cast<CvPluginInterface*>(currentPlugin->instance());
-            if(currentPluginInstance)
-            {
-                cv::TickMeter meter;
-                meter.start();
-                currentPluginInstance->processImage(originalMat, processedMat);
-                meter.stop();
-                qDebug() << "The process took " << meter.getTimeMilli() << "milliseconds";
-            }
-        }
-        else
-        {
-            processedMat = originalMat.clone();
-        }
-
-        originalImage = QImage(originalMat.data, originalMat.cols, originalMat.rows, originalMat.step, QImage::Format_RGB888);
-        originalPixmap.setPixmap(QPixmap::fromImage(originalImage.rgbSwapped()));
-
-        processedImage = QImage(processedMat.data, processedMat.cols, processedMat.rows, processedMat.step, QImage::Format_RGB888);
-        processedPixmap.setPixmap(QPixmap::fromImage(processedImage.rgbSwapped()));
-    }
-}
-
-void MainWindow::on_actionSaveImage_triggered()
+void MainWindow::exportImageByDialog()
 {
     if(!ui->viewOriginalCheck->isChecked() && !processedMat.empty())
     {
@@ -343,17 +318,43 @@ void MainWindow::on_actionSaveImage_triggered()
     }
 }
 
-void MainWindow::onCurrentPluginErrorMessage(QString msg)
+void MainWindow::onCurrentPluginUpdateNeeded()
+{
+    qDebug() << "Update image";
+
+    if(!originalMat.empty())
+    {
+        if(!currentPlugin.isNull())
+        {
+            CvPluginInterface *currentPluginInstance = qobject_cast<CvPluginInterface*>(currentPlugin->instance());
+            if(currentPluginInstance)
+            {
+                cv::TickMeter meter;
+                meter.start();
+                currentPluginInstance->processImage(originalMat, processedMat);
+                meter.stop();
+                qDebug() << "The process took " << meter.getTimeMilli() << "milliseconds";
+            }
+        }
+        else
+        {
+            processedMat = originalMat.clone();
+        }
+
+        originalImage = QImage(originalMat.data, originalMat.cols, originalMat.rows, originalMat.step, QImage::Format_RGB888);
+        originalPixmap.setPixmap(QPixmap::fromImage(originalImage.rgbSwapped()));
+
+        processedImage = QImage(processedMat.data, processedMat.cols, processedMat.rows, processedMat.step, QImage::Format_RGB888);
+        processedPixmap.setPixmap(QPixmap::fromImage(processedImage.rgbSwapped()));
+    }
+}
+
+void MainWindow::onCurrentPluginErrorMessage(const QString &msg)
 {
     qDebug() << "Plugin Error Message : " << msg;
 }
 
-void MainWindow::onCurrentPluginInfoMessage(QString msg)
+void MainWindow::onCurrentPluginInfoMessage(const QString &msg)
 {
     qDebug() << "Plugin Info Message : " << msg;
-}
-
-void MainWindow::on_action_Camera_triggered()
-{
-
 }

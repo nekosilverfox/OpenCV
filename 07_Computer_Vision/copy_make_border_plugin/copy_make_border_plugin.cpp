@@ -1,7 +1,6 @@
 #include "copy_make_border_plugin.h"
 #include "ui_plugin.h"
 
-
 CopyMakeBorder_Plugin::CopyMakeBorder_Plugin()
 {
     // Insert initialization codes here ...
@@ -34,6 +33,7 @@ QString CopyMakeBorder_Plugin::help()
 
 void CopyMakeBorder_Plugin::setupUi(QWidget *parent)
 {
+    qDebug() << "Setup ui" << title();
     ui = new Ui::PluginGui;
     ui->setupUi(parent);
 
@@ -45,7 +45,10 @@ void CopyMakeBorder_Plugin::setupUi(QWidget *parent)
     items.append("BORDER_REFLECT_101");
     ui->cbBorderType->addItems(items);
 
-    connect(ui->cbBorderType, &QComboBox::currentIndexChanged, this, &CopyMakeBorder_Plugin::updateNeeded);
+    connect(ui->cbBorderType, &QComboBox::currentIndexChanged, this, [=](){
+        qDebug() << "emit CvPluginInterface::updateNeeded";
+        emit CvPluginInterface::updateNeeded();
+    });
 }
 
 void CopyMakeBorder_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outputImage)
