@@ -8,11 +8,13 @@ namespace Ui {
     class PluginGui;
 }
 
-class TEMPLATE_PLUGINSHARED_EXPORT Template_Plugin: public QObject, public CvPluginInterface
+// 确保插件类仅通过 CvPluginInterface 间接继承 QObject
+class TEMPLATE_PLUGINSHARED_EXPORT Template_Plugin: public CvPluginInterface
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.computervision.cvplugininterface")
     Q_INTERFACES(CvPluginInterface)
+
 public:
     Template_Plugin();
     ~Template_Plugin();

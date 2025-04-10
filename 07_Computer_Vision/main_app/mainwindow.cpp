@@ -1,11 +1,16 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QObject>
+
+#include "cv_plugin_interface.h"
+#include "../copy_make_border_plugin/copy_make_border_plugin.h"
+
 #if 1
 
 #define PLUGINS_DIR                         "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/cvplugins"
 #define LANGUAGES_DIR                       "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/languages"
-#define THEMES_DIR                          "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/themes/"
+#define THEMES_DIR                          "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/themes"
 #define FILE_ON_DISK_DYNAMIC_PROPERTY       "absolute_file_path"
 
 #else
@@ -15,7 +20,6 @@
 #define FILE_ON_DISK_DYNAMIC_PROPERTY       "absolute_file_path"
 #endif
 
-#include "../cv_plugin_interface/cv_plugin_interface.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -34,6 +38,9 @@ MainWindow::MainWindow(QWidget *parent) :
     scene.addItem(&processedPixmap);
 
     ui->graphicsView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+
+    connect(ui->actionAboutQt, &QAction::triggered, this, [=](){qApp->aboutQt();});
+    connect(ui->actionExit, &QAction::triggered, this, &MainWindow::close);
 }
 
 MainWindow::~MainWindow()
@@ -99,7 +106,7 @@ void MainWindow::populatePluginsMenu()
         if(QLibrary::isLibrary(curFile.absoluteFilePath()))
         {  // 如果是插件
             QPluginLoader pluginLoader(curFile.absoluteFilePath(), this);
-            CvPluginInterface *plugin = dynamic_cast<CvPluginInterface*>(pluginLoader.instance());
+            CvPluginInterface *plugin = qobject_cast<CvPluginInterface*>(pluginLoader.instance());
             if(plugin)
             {
                 QAction *pluginAction = ui->menu_Plugins->addAction(plugin->title());
@@ -139,6 +146,9 @@ void MainWindow::populatePluginsMenu()
     }
 }
 
+/**
+ * @brief MainWindow::populateLanguagesMenu 加载语言并添加到列表
+ */
 void MainWindow::populateLanguagesMenu()
 {
     qDebug() << "Search Languages in dir" << LANGUAGES_DIR;
@@ -167,6 +177,9 @@ void MainWindow::populateLanguagesMenu()
     ui->actionLanguage->setMenu(languagesMenu);
 }
 
+/**
+ * @brief MainWindow::populateThemesMenu 加载主题并添加到列表
+ */
 void MainWindow::populateThemesMenu()
 {
     qDebug() << "Search Themes in dir" << THEMES_DIR;
@@ -194,15 +207,6 @@ void MainWindow::populateThemesMenu()
     ui->actionTheme->setMenu(themesMenu);
 }
 
-void MainWindow::on_actionAboutQt_triggered()
-{
-    qApp->aboutQt();
-}
-
-void MainWindow::on_actionExit_triggered()
-{
-    close();
-}
 
 void MainWindow::onPluginActionTriggered(bool)
 {
@@ -214,26 +218,27 @@ void MainWindow::onPluginActionTriggered(bool)
 
     currentPluginFile = QObject::sender()->property(FILE_ON_DISK_DYNAMIC_PROPERTY).toString();
     currentPlugin = new QPluginLoader(currentPluginFile, this);
+
     currentPluginGui = new QWidget(this);
     ui->pluginLayout->addWidget(currentPluginGui);
-    CvPluginInterface *currentPluginInstance = dynamic_cast<CvPluginInterface*>(currentPlugin->instance());
 
+    // 关键修改点：使用 qobject_cast 替代 dynamic_cast
+    CvPluginInterface* currentPluginInstance = qobject_cast<CvPluginInterface*>(currentPlugin->instance());
     if(currentPluginInstance)
     {
         currentPluginInstance->setupUi(currentPluginGui);
-        connect(currentPlugin->instance(), SIGNAL(updateNeeded()), this, SLOT(onCurrentPluginUpdateNeeded()));
-        connect(currentPlugin->instance(), SIGNAL(infoMessage(QString)), this, SLOT(onCurrentPluginInfoMessage(QString)));
-        connect(currentPlugin->instance(), SIGNAL(errorMessage(QString)), this, SLOT(onCurrentPluginErrorMessage(QString)));
-
+        connect(currentPluginInstance, &CvPluginInterface::updateNeeded, this, &MainWindow::onCurrentPluginUpdateNeeded);
+        connect(currentPluginInstance, &CvPluginInterface::infoMessage,  this, &MainWindow::onCurrentPluginInfoMessage);
+        connect(currentPluginInstance, &CvPluginInterface::errorMessage, this, &MainWindow::onCurrentPluginErrorMessage);
     }
 }
 
 void MainWindow::onLanguageActionTriggered(bool)
 {
     currentLanguageFile = QObject::sender()->property(FILE_ON_DISK_DYNAMIC_PROPERTY).toString();
-    qApp->removeTranslator(&translator);
     if(!currentLanguageFile.isEmpty())
     {
+        qApp->removeTranslator(&translator);
         translator.load(currentLanguageFile);
         qApp->installTranslator(&translator);
         ui->retranslateUi(this);

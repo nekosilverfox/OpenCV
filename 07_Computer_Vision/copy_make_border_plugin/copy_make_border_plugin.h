@@ -1,15 +1,18 @@
 #ifndef COPY_MAKE_BORDER_PLUGIN_H
 #define COPY_MAKE_BORDER_PLUGIN_H
 
-#include "cv_plugin_interface.h"
 #include "copy_make_border_plugin_global.h"
-#include "ui_plugin.h"
+
+#include <QObject>
+
+#include "../cv_plugin_interface/cv_plugin_interface.h"
+
 
 namespace Ui {
 class PluginGui;
 }
 
-class COPY_MAKE_BORDER_EXPORT CopyMakeBorder_Plugin: public QObject, public CvPluginInterface
+class COPY_MAKE_BORDER_EXPORT CopyMakeBorder_Plugin: public CvPluginInterface
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.computervision.cvplugininterface")
@@ -19,12 +22,12 @@ public:
     CopyMakeBorder_Plugin();
     ~CopyMakeBorder_Plugin();
 
-    QString title();
-    QString version();
-    QString description();
-    QString help();
-    void setupUi(QWidget *parent);
-    void processImage(const cv::Mat &inputImage, cv::Mat &outputImage);
+    QString title() override;
+    QString version() override;
+    QString description()override;
+    QString help() override;
+    void setupUi(QWidget *parent) override;
+    void processImage(const cv::Mat &inputImage, cv::Mat &outputImage) override;
 
 signals:
     void updateNeeded();

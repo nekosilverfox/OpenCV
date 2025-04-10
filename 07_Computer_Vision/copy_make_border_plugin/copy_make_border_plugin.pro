@@ -4,6 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TEMPLATE = lib
 DEFINES += COPY_MAKE_BORDER_LIBRARY
+DEFINES += MAKE_CVPLUGIN_LIB
 
 CONFIG += c++17
 CONFIG += plugin
@@ -12,12 +13,11 @@ CONFIG += plugin
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-INCLUDEPATH += ../cv_plugin_interface
-
 SOURCES += \
     copy_make_border_plugin.cpp
 
 HEADERS += \
+    ../cv_plugin_interface/cv_plugin_interface.h \  # 接口类必须导入为头文件
     copy_make_border_plugin_global.h \
     copy_make_border_plugin.h
 

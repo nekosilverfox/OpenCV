@@ -49,16 +49,9 @@ private slots:
     void onCurrentPluginErrorMessage(QString msg);
     void onCurrentPluginInfoMessage(QString msg);
 
-    void on_actionAboutQt_triggered();
-
-    void on_actionExit_triggered();
-
     void on_actionOpenImage_triggered();
-
     void on_viewOriginalCheck_toggled(bool checked);
-
     void on_actionSaveImage_triggered();
-
     void on_action_Camera_triggered();
 
 private:

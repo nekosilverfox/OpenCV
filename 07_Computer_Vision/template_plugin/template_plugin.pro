@@ -8,6 +8,7 @@ TEMPLATE = lib
 CONFIG += c++17
 CONFIG += plugin
 
+DEFINES += MAKE_CVPLUGIN_LIB
 DEFINES += TEMPLATE_PLUGIN_LIBRARY
 
 # The following define makes your compiler emit warnings if you use
