@@ -34,8 +34,8 @@ MainWindow::MainWindow(QWidget *parent) :
     populateThemesMenu();
 
     ui->graphicsView->setScene(&scene);
-    scene.addItem(&originalPixmap);
-    scene.addItem(&processedPixmap);
+    scene.addItem(&originalPixmapItem);
+    scene.addItem(&processedPixmapItem);
 
     ui->graphicsView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
@@ -44,8 +44,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionOpenImage, &QAction::triggered, this, &MainWindow::importImageByDialog);
     connect(ui->actionSaveImage, &QAction::triggered, this, &MainWindow::exportImageByDialog);
     connect(ui->viewOriginalCheck, &QCheckBox::toggled, this, [=](bool checked){
-        originalPixmap.setVisible(checked);
-        processedPixmap.setVisible(!checked);
+        originalPixmapItem.setVisible(checked);
+        processedPixmapItem.setVisible(!checked);
     });
     connect(ui->action_Camera, &QAction::triggered, this, [](){});
 
@@ -123,7 +123,7 @@ void MainWindow::populatePluginsMenu()
                 connect(pluginAction, &QAction::triggered, this, &MainWindow::onPluginActionTriggered);
 
                 if(currentPluginFile == curFile.absoluteFilePath())
-                {
+                {  // 用 QSetting 恢复配置的时候 currentPluginFile 被写入了
                     pluginAction->trigger();
                 }
             }
@@ -342,10 +342,10 @@ void MainWindow::onCurrentPluginUpdateNeeded()
         }
 
         originalImage = QImage(originalMat.data, originalMat.cols, originalMat.rows, originalMat.step, QImage::Format_RGB888);
-        originalPixmap.setPixmap(QPixmap::fromImage(originalImage.rgbSwapped()));
+        originalPixmapItem.setPixmap(QPixmap::fromImage(originalImage.rgbSwapped()));
 
         processedImage = QImage(processedMat.data, processedMat.cols, processedMat.rows, processedMat.step, QImage::Format_RGB888);
-        processedPixmap.setPixmap(QPixmap::fromImage(processedImage.rgbSwapped()));
+        processedPixmapItem.setPixmap(QPixmap::fromImage(processedImage.rgbSwapped()));
     }
 }
 
