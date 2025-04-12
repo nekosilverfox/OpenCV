@@ -4491,19 +4491,28 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
 ## OpenCV 中的滤波函数
 
+> [!note]
+>
+> 建议先了解什么是“核 kernel”：
+>
+> https://www.youtube.com/watch?v=C_zFhWdM4ic
+>
+> https://www.youtube.com/watch?v=4xWpQe3G9qI
+>
+> https://www.youtube.com/watch?v=KuXjwB4LzSA
+
 所有 OpenCV 滤波函数均以图像为输入，生成相同尺寸和通道数的图像。如前所述，它们均包含 `borderType` 参数（已通过示例学习）。除此之外，每个滤波函数有其特定参数用于配置行为。以下是 OpenCV 中可用的滤波函数列表及其描述，文末提供示例插件 `filter_plugin` 的源码链接，该插件包含下述多数滤波功能，并支持通过 GUI 调整参数：
 
 - **`bilateralFilter`**  
   用于生成双边滤波图像。根据 `sigma` 值和 `diameter` 参数，可得到接近原图的图像或卡通化效果（当 `sigma` 值较高时）。示例代码：
+
   ```cpp
   cv::bilateralFilter(input, output, 
                      diameter, sigmaColor, sigmaSpace, 
                      borderType);
-  
-  bilateralFilter(inpMat,outMat,15,200,200); 
   ```
 
-  效果截图：
+  `bilateralFilter(inpMat,outMat,15,200,200); ` 效果截图：
 
   <img src="doc/img/9b8f8fea-fe40-4729-84a2-69b544298b9d.png" alt="img" style="zoom:67%;" />
 
@@ -4520,28 +4529,35 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
     示例调用（左为高斯模糊，右为中值模糊）：
 
     ```cpp
-    Size kernelSize(5,5); 
-    blur(inpMat,outMat,kernelSize); 
+    // 使用归一化的盒状滤波器（均值滤波）进行图像模糊，核内所有像素取平均值替换中心像素
+    Size kernelSize(5,5); // 定义5×5的方形滤波核，核越大模糊效果越明显
+    blur(inpMat, outMat, kernelSize); 
     
-    int depth = -1; // output depth same as source 
-    Size kernelSizeB(10,10); 
-    Point anchorPoint(-1,-1); 
-    bool normalized = true; 
-    boxFilter(inutMat,outMat,depth, 
-       kernelSizeB,anchorPoint, normalized); 
     
+    // 方框滤波（boxFilter函数）
+    int depth = -1; // 输出图像深度与输入一致（例如输入为8位则输出也为8位） 
+    Size kernelSizeB(10,10); // 10×10的滤波核，核尺寸越大模糊效果越强
+    Point anchorPoint(-1,-1); // 将锚点设为滤波核的中心位置
+    bool normalized = true; // 启用归一化，此时等效于blur函数；未归一化时可用于计算像素积分特征（如光流算法）
+    boxFilter(inutMat, outMat, depth, 
+       kernelSizeB, anchorPoint, normalized); // 计算核内像素的加权和（未归一化）或平均值（归一化）
+    
+    // 高斯滤波（GaussianBlur函数）基于高斯函数计算核内像素的加权平均值，权重由像素空间距离决定
     double sigma = 10; 
     GaussianBlur(inpMat,outMat,kernelSize,sigma,sigma); 
     
-    int apertureSize = 10; 
+    // 中值滤波（medianBlur函数）
+    int apertureSize = 9;   // 核大小必须为奇数，大核会显著增加计算量，建议不超过7×7
     medianBlur(inpMat,outMat,apertureSize); 
     ```
 
     ![](doc/img/5db26a4a-b815-43a4-bc7c-785c2d28a738.png)
 
+    
+
 - **`filter2D`**
 
-  该函数可用于对图像应用自定义滤波器。您需要为该函数提供的一个重要参数是内核矩阵。该函数功能强大，可以产生许多不同的结果，包括与我们之前看到的模糊函数相同的结果，以及许多其他滤镜，具体取决于所提供的内核。下面是几个内核示例、使用方法以及生成的图像。请务必尝试不同的内核（您可以在互联网上搜索大量有用的内核矩阵），并亲自尝试使用此函数：
+  该函数可用于对图像**应用自定义滤波器**。您需要为该函数提供的一个重要参数是**内核矩阵**。该函数功能强大，可以产生许多不同的结果，包括与我们之前看到的模糊函数相同的结果，以及许多其他滤镜，具体取决于所提供的内核。下面是几个内核示例、使用方法以及生成的图像。请务必尝试不同的内核（您可以在互联网上搜索大量有用的内核矩阵），并亲自尝试使用此函数：
 
   ```cpp
   // Sharpening image 
@@ -4549,7 +4565,7 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
                     0, -1, 0, 
                    -1, 5, -1, 
                     0, -1, 0); 
-  int depth = -1; // output depth same as source 
+  int depth = -1; // 输出图像深度与输入一致（例如输入为8位则输出也为8位） 
   filter2D(inpMat,outMat,depth,f2dkernel); 
   
   ***** 
@@ -4559,7 +4575,7 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
                     0, +1.5, 0, 
                     +1.5, -6, +1.5, 
                     0, +1.5, 0); 
-  int depth = -1; // output depth same as source 
+  int depth = -1; // 输出图像深度与输入一致（例如输入为8位则输出也为8位） 
   filter2D(inpMat,outMat,depth,f2dkernel); 
   ```
 
@@ -4567,14 +4583,25 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
   ![](doc/img/b803466a-f39b-45a5-8f6e-e15e5457fe2d.png)
 
-- `Laplacian`、`Scharr`、`Sobel` 和 `spatialGradient`：这些函数用于处理图像导数。图像导数在计算机视觉中非常重要，因为它们可用于检测图像中发生变化的区域，或者更准确地说，检测图像中发生显著变化的区域（因为这是导数的用途之一）。在不深入其理论和数学细节的情况下，可以提到它们在实践中被用于边缘检测或角点检测，并被 OpenCV 框架中的关键点提取方法广泛使用。在前面的示例和图像中，我们也使用了导数计算核。以下是它们的使用示例及其结果图像。这些截图来自 `Computer_Vision` 项目和 `filter_plugin`（本列表后附有链接）。您始终可以使用 Qt 小部件（如数字框、旋钮和滑块）来获取 OpenCV 函数的不同参数值，从而更好地控制函数行为：
+  
+
+- `Laplacian`、`Scharr`、`Sobel` 和 `spatialGradient`：这些函数用于处理图像导数。图像导数在计算机视觉中非常重要，因为它们可用于检测图像中发生变化的区域，或者更准确地说，**检测图像中发生显著变化的区域**（因为这是导数的用途之一）。在不深入其理论和数学细节的情况下，可以提到它们在**实践中被用于边缘检测或角点检测**，并被 OpenCV 框架中的关键点提取方法广泛使用。在前面的示例和图像中，我们也使用了导数计算核。以下是它们的使用示例及其结果图像。这些截图来自 `Computer_Vision` 项目和 `filter_plugin`（本列表后附有链接）。您始终可以使用 Qt 小部件（如数字框、旋钮和滑块）来获取 OpenCV 函数的不同参数值，从而更好地控制函数行为：
 
     ```cpp
-                int depth = -1; 
-                int dx = 1; int dy = 1; 
-                int kernelSize = 3; 
-                double scale = 5; double delta = 220; 
-                Sobel(inpMat, outMat, depth,dx,dy,kernelSize,scale,delta); 
+    // Sobel 算子是一种基于一阶导数的边缘检测算法，通过计算图像在水平和垂直方向的梯度来识别边缘。
+    // 其核心由两个 3×3 的卷积核组成：水平方向核（检测垂直边缘），垂直方向核（检测水平边缘）
+    
+    int depth = -1; 
+    int dx = 1; 
+    int dy = 1; 
+    int kernelSize = 3; 
+    double scale = 5; 
+    double delta = 220; 
+    Sobel(inpMat, outMat,
+          depth, 
+          dx, dy,
+          kernelSize,
+          scale, delta); 
     ```
 
     以下是上述代码的输出截图：
@@ -4583,11 +4610,18 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
     如果使用以下代码：
 
-    ```
-                int depth = -1; 
-                int dx = 1; int dy = 0; 
-                double scale = 1.0; double delta = 100.0; 
-                Scharr(inpMat,outMat,depth,dx,dy,scale,delta); 
+    ```cpp
+    // Scharr 是 Sobel 的改进版本，优化了 3×3 核的权重分配，提升了边缘检测精度
+    int depth = -1; 
+    int dx = 1; 
+    int dy = 0; 
+    double scale = 1.0; 
+    double delta = 100.0; 
+    
+    Scharr(inpMat, outMat,
+           depth,
+           dx, dy,
+           scale, delta); 
     ```
 
     将会得到类似这样的结果：
@@ -4596,25 +4630,28 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
     对于以下代码：
 
-    ```
-                int depth = -1; int kernelSize = 3; 
-                double scale = 1.0; double delta = 0.0; 
-                Laplacian(inpMat,outMat,depth, kernelSize,scale,delta); 
+    ```cpp
+    // Laplacian 是一种二阶导数算子，通过计算图像的二阶微分来检测边缘和纹理变化
+    int depth = -1; 
+    int kernelSize = 3; 
+    double scale = 1.0; 
+    double delta = 0.0; 
+    Laplacian(inpMat, outMat, depth, kernelSize, scale, delta); 
     ```
 
     将会生成类似以下的结果：
 
-    ![img](doc/img/a494560b-65d2-4ffd-9da9-739eae3a1351.png)
+    <img src="doc/img/a494560b-65d2-4ffd-9da9-739eae3a1351.png" alt="img" style="zoom:80%;" />
 
-- `erode` 和 `dilate`：顾名思义，这些函数可用于实现腐蚀和膨胀效果。两个函数都需要一个结构元素矩阵，该矩阵可以通过直接调用 `getStructuringElement` 函数构建。您可以选择多次运行（或迭代）函数以得到更加强烈的腐蚀或膨胀效果。以下是这两个函数的使用示例及其结果图像：
+    
+
+- `erode` 和 `dilate`：顾名思义，这些函数可用于实现腐蚀和膨胀效果。两个函数都需要一个**结构元素矩阵**，该矩阵可以通过直接调用 `getStructuringElement` 函数构建。您可以选择多次运行（或迭代）函数以得到更加强烈的腐蚀或膨胀效果。以下是这两个函数的使用示例及其结果图像：
 
     ```cpp
-                erode(inputImage, 
-                outputImage, 
-                getStructuringElement(shapeComboBox->currentIndex(), 
-                Size(5,5)), // 内核尺寸
-                Point(-1,-1), // 默认锚点 (-1,-1)
-                iterationsSpinBox->value()); 
+    erode(inputImage, outputImage, 
+          getStructuringElement(shapeComboBox->currentIndex(), Size(5,5)), // 内核尺寸
+          Point(-1,-1), // 默认锚点 (-1,-1)
+          iterationsSpinBox->value()); 
 
 以下是生成的图像：
 
@@ -4622,7 +4659,9 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
 您可以向 `dilate` 函数传递完全相同的参数。上述代码假设结构元素的形状通过组合框部件（`Combo Box`）获取，其值可以是 `MORPH_RECT`、`MORPH_CROSS` 或 `MORPH_ELLIPSE`。此外，迭代次数通过**数字框部件**（`Spin Box`）设置，该值必须大于零。
 
--   `morphologyEx`：该函数可用于执行各种形态学操作。它接受一个操作类型参数，以及我们在 `dilate` 和 `erode` 函数中使用的相同参数。以下是可传递给 `morphologyEx` 函数的参数及其含义：
+
+
+-   `morphologyEx`：该函数可用于执行各种**形态学操作**。它接受一个操作类型参数，以及我们在 `dilate` 和 `erode` 函数中使用的相同参数。以下是可传递给 `morphologyEx` 函数的参数及其含义：
     -   `MORPH_ERODE`：与 `erode` 函数效果相同。
     -   `MORPH_DILATE`：与 `dilate` 函数效果相同。
     -   `MORPH_OPEN`：用于执行开运算。相当于先腐蚀后膨胀，适用于移除图像中的细小噪声。
@@ -4634,13 +4673,11 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 以下是一个示例代码，可以看到其函数调用方式与 `dilate` 和 `erode` 非常相似。同样假设形态学类型和结构元素形状通过组合框部件（`Combo Box`）选择，迭代次数通过数字框部件（`SpinBox`）设置：
 
 ```cpp
-            morphologyEx(inputImage, 
-                outputImage, 
-                morphTypeComboBox->currentIndex(), 
-                getStructuringElement(shapeComboBox->currentIndex(), 
-                Size(5,5)), // 内核尺寸
-                Point(-1,-1), // 默认锚点
-            iterationsSpinBox->value()); 
+morphologyEx(inputImage, outputImage, 
+              morphTypeComboBox->currentIndex(), 
+              getStructuringElement(shapeComboBox->currentIndex(), Size(5,5)), // 内核尺寸
+              Point(-1,-1), // 默认锚点
+              iterationsSpinBox->value()); 
 ```
 
 以下是不同形态学操作的结果图像：
@@ -4652,6 +4689,12 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/filter_plugin
 
 ---
+
+
+
+
+
+
 
 
 
@@ -5490,6 +5533,8 @@ QtConcurrent::filteredReduced(list, filterImage, addDateTime);
 - 其他需要处理连续帧的任务（即当前帧计算依赖历史帧数据）  
 
 届时，我们将运用本章所学的线程技术，实现视频分析所需的计算机视觉算法。
+
+
 
 
 
