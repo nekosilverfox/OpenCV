@@ -52,13 +52,13 @@ void Transform_Plugin::setupUi(QWidget *parent)
                 << "INTER_AREA"
                 << "INTER_LANCZOS4");
 
-    connect(ui->resizeHalfRadio, SIGNAL(toggled(bool)), this, SLOT(on_resizeHalfRadio_toggled(bool)));
-    connect(ui->resizeDoubleRadio, SIGNAL(toggled(bool)), this, SLOT(on_resizeDoubleRadio_toggled(bool)));
-    connect(ui->remapRadio, SIGNAL(toggled(bool)), this, SLOT(on_remapRadio_toggled(bool)));
-    connect(ui->affineRadio, SIGNAL(toggled(bool)), this, SLOT(on_affineRadio_toggled(bool)));
-    connect(ui->perspectiveRadio, SIGNAL(toggled(bool)), this, SLOT(on_perspectiveRadio_toggled(bool)));
-    connect(ui->borderTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_borderTypeCombo_currentIndexChanged(int)));
-    connect(ui->interpolationCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_interpolationCombo_currentIndexChanged(int)));
+    connect(ui->resizeHalfRadio,    &QRadioButton::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->resizeDoubleRadio,  &QRadioButton::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->remapRadio,         &QRadioButton::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->affineRadio,        &QRadioButton::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->perspectiveRadio,   &QRadioButton::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->borderTypeCombo,    &QComboBox::currentIndexChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->interpolationCombo, &QComboBox::currentIndexChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
 }
 
 void Transform_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outputImage)
@@ -160,44 +160,3 @@ void Transform_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outputIm
     }
 }
 
-void Transform_Plugin::on_resizeHalfRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Transform_Plugin::on_resizeDoubleRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Transform_Plugin::on_remapRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Transform_Plugin::on_affineRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Transform_Plugin::on_perspectiveRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Transform_Plugin::on_borderTypeCombo_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    emit updateNeeded();
-}
-
-void Transform_Plugin::on_interpolationCombo_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    emit updateNeeded();
-}

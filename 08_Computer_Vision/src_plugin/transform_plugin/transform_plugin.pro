@@ -26,7 +26,8 @@ SOURCES += \
 
 HEADERS += \
         transform_plugin.h \
-        transform_plugin_global.h
+        transform_plugin_global.h \
+        ../cvplugininterface/cvplugininterface.h
 
 unix {
     target.path = /usr/lib
@@ -42,10 +43,11 @@ unix: !macx{
     PKGCONFIG += opencv
 }
 
-unix: macx{
-INCLUDEPATH += "/usr/local/include"
-LIBS += -L"/usr/local/lib" \
-    -lopencv_world
+unix: macx {
+    # OpenCV
+    INCLUDEPATH += /usr/local/include/opencv4
+    LIBS += -L/usr/local/lib
+    LIBS += -lopencv_world
 }
 
 FORMS += \
