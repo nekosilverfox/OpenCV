@@ -1,6 +1,7 @@
 #include "filter_plugin.h"
 
 #include "ui_plugin.h"
+#include "cvplugininterface.h"
 
 #define BILATERAL_FILTER_PAGE           0
 #define BLUR_FILTER_PAGE                1
@@ -40,7 +41,6 @@ QString Filter_Plugin::help()
 {
     return "This is a plugin that performs different filters available in OpenCV";
 }
-
 void Filter_Plugin::setupUi(QWidget *parent)
 {
     ui = new Ui::PluginGui;
@@ -48,45 +48,47 @@ void Filter_Plugin::setupUi(QWidget *parent)
 
     ui->mainTabs->setCurrentIndex(0);
 
-    connect(ui->mainTabs, SIGNAL(currentChanged(int)), this, SLOT(on_mainTabs_currentChanged(int)));
+    connect(ui->mainTabs, &QTabWidget::currentChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
 
-    connect(ui->bilateralDiaSpin, SIGNAL(valueChanged(int)), this, SLOT(on_bilateralDiaSpin_valueChanged(int)));
-    connect(ui->bilateralSigmaColorSpin, SIGNAL(valueChanged(double)), this, SLOT(on_bilateralSigmaColorSpin_valueChanged(double)));
-    connect(ui->bilateralSigmaSpaceSpin, SIGNAL(valueChanged(double)), this, SLOT(on_bilateralSigmaSpaceSpin_valueChanged(double)));
+    connect(ui->bilateralDiaSpin, &QSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->bilateralSigmaColorSpin, &QDoubleSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->bilateralSigmaSpaceSpin, &QDoubleSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
 
-    connect(ui->blurKernelSizeSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_blurKernelSizeSpinBox_valueChanged(int)));
-    connect(ui->blurAnchoXSpin, SIGNAL(valueChanged(int)), this, SLOT(on_blurAnchoXSpin_valueChanged(int)));
-    connect(ui->blurAnchoYSpin, SIGNAL(valueChanged(int)), this, SLOT(on_blurAnchoYSpin_valueChanged(int)));
+    connect(ui->blurKernelSizeSpinBox, &QSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->blurAnchoXSpin, &QSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->blurAnchoYSpin, &QSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
 
-    connect(ui->boxKernelSizeSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_boxKernelSizeSpinBox_valueChanged(int)));
-    connect(ui->boxDepthSpin, SIGNAL(valueChanged(int)), this, SLOT(on_boxDepthSpin_valueChanged(int)));
-    connect(ui->boxAnchoXSpin, SIGNAL(valueChanged(int)), this, SLOT(on_boxAnchoXSpin_valueChanged(int)));
-    connect(ui->boxAnchoYSpin, SIGNAL(valueChanged(int)), this, SLOT(on_boxAnchoYSpin_valueChanged(int)));
-    connect(ui->boxNormalCheck, SIGNAL(toggled(bool)), this, SLOT(on_boxNormalCheck_toggled(bool)));
+    connect(ui->boxKernelSizeSpinBox, &QSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->boxDepthSpin, &QSpinBox::valueChanged, this,  [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->boxAnchoXSpin, &QSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->boxAnchoYSpin, &QSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->boxNormalCheck, &QCheckBox::toggled, this,    [=](){emit CvPluginInterface::updateNeeded();});
 
-    connect(ui->gaussKernelSizeSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_gaussKernelSizeSpinBox_valueChanged(int)));
-    connect(ui->gaussSigmaXSpin, SIGNAL(valueChanged(double)), this, SLOT(on_gaussSigmaXSpin_valueChanged(double)));
-    connect(ui->gaussSigmaYSpin, SIGNAL(valueChanged(double)), this, SLOT(on_gaussSigmaYSpin_valueChanged(double)));
+    connect(ui->gaussKernelSizeSpinBox, &QSpinBox::valueChanged, this,
+            [=](int arg1){if(arg1 % 2 == 1){emit CvPluginInterface::updateNeeded();}});
+    connect(ui->gaussSigmaXSpin, &QDoubleSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->gaussSigmaYSpin, &QDoubleSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
 
-    connect(ui->medianApertureSpin, SIGNAL(valueChanged(int)), this, SLOT(on_medianApertureSpin_valueChanged(int)));
+    connect(ui->medianApertureSpin, &QSpinBox::valueChanged, this,
+            [=](int arg1){if(arg1 % 2 == 1){emit CvPluginInterface::updateNeeded();}});
 
-    connect(ui->derivSobelRadio, SIGNAL(toggled(bool)), this, SLOT(on_derivSobelRadio_toggled(bool)));
-    connect(ui->derivScharrRadio, SIGNAL(toggled(bool)), this, SLOT(on_derivScharrRadio_toggled(bool)));
-    connect(ui->derivLaplacRadio, SIGNAL(toggled(bool)), this, SLOT(on_derivLaplacRadio_toggled(bool)));
-    connect(ui->derivDeltaSpin, SIGNAL(valueChanged(double)), this, SLOT(on_derivDeltaSpin_valueChanged(double)));
-    connect(ui->derivScaleSpin, SIGNAL(valueChanged(double)), this, SLOT(on_derivScaleSpin_valueChanged(double)));
+    connect(ui->derivSobelRadio,  &QCheckBox::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->derivScharrRadio, &QCheckBox::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->derivLaplacRadio, &QCheckBox::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->derivDeltaSpin, &QDoubleSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->derivScaleSpin, &QDoubleSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
 
     ui->morphShapesCombo->addItems(
                 QStringList() << "MORPH_RECT" << "MORPH_CROSS" << "MORPH_ELLIPSE");
     ui->morphTypesCombo->addItems(
                 QStringList() << "MORPH_ERODE" << "MORPH_DILATE" << "MORPH_OPEN" << "MORPH_CLOSE"
                 << "MORPH_GRADIENT" << "MORPH_TOPHAT" << "MORPH_BLACKHAT");
-    connect(ui->morphDilateRadio, SIGNAL(toggled(bool)), this, SLOT(on_morphDilateRadio_toggled(bool)));
-    connect(ui->morphErodeRadio, SIGNAL(toggled(bool)), this, SLOT(on_morphErodeRadio_toggled(bool)));
-    connect(ui->morphMorphRadio, SIGNAL(toggled(bool)), this, SLOT(on_morphMorphRadio_toggled(bool)));
-    connect(ui->morphIterSpin, SIGNAL(valueChanged(int)), this, SLOT(on_morphIterSpin_valueChanged(int)));
-    connect(ui->morphShapesCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_morphShapesCombo_currentIndexChanged(int)));
-    connect(ui->morphTypesCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_morphTypesCombo_currentIndexChanged(int)));
+    connect(ui->morphDilateRadio, &QCheckBox::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->morphErodeRadio,  &QCheckBox::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->morphMorphRadio,  &QCheckBox::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->morphIterSpin, &QSpinBox::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->morphShapesCombo, &QComboBox::currentIndexChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->morphTypesCombo,  &QComboBox::currentIndexChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
 }
 
 void Filter_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outputImage)
@@ -195,166 +197,4 @@ void Filter_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outputImage
         break;
 
     }
-}
-
-void Filter_Plugin::on_bilateralDiaSpin_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_bilateralSigmaColorSpin_valueChanged(double arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_bilateralSigmaSpaceSpin_valueChanged(double arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_blurKernelSizeSpinBox_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_blurAnchoXSpin_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_blurAnchoYSpin_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_boxKernelSizeSpinBox_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_boxDepthSpin_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_boxAnchoXSpin_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_boxAnchoYSpin_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_boxNormalCheck_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_gaussKernelSizeSpinBox_valueChanged(int arg1)
-{
-    if(arg1 % 2 == 1) // Must be odd
-        emit updateNeeded();
-}
-
-void Filter_Plugin::on_gaussSigmaXSpin_valueChanged(double arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_gaussSigmaYSpin_valueChanged(double arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_medianApertureSpin_valueChanged(int arg1)
-{
-    if(arg1 % 2 == 1) // Must be odd
-        emit updateNeeded();
-}
-
-void Filter_Plugin::on_mainTabs_currentChanged(int index)
-{
-    Q_UNUSED(index);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_derivSobelRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_derivScharrRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_derivLaplacRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_derivScaleSpin_valueChanged(double arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_derivDeltaSpin_valueChanged(double arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_morphErodeRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_morphDilateRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_morphMorphRadio_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_morphIterSpin_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_morphTypesCombo_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    emit updateNeeded();
-}
-
-void Filter_Plugin::on_morphShapesCombo_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    emit updateNeeded();
 }

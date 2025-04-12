@@ -8,7 +8,7 @@ CONFIG += c++17
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-INCLUDEPATH += ../cv_plugin_interface
+INCLUDEPATH += ../src_plugin/cvplugininterface
 
 SOURCES += \
     customgraphicseffect.cpp \
@@ -17,7 +17,7 @@ SOURCES += \
     mainwindow.cpp
 
 HEADERS += \
-    ../cv_plugin_interface/cv_plugin_interface.h \
+    ../src_plugin/cvplugininterface/cvplugininterface.h \
     customgraphicseffect.h \
     enhancedgraphicsview.h \
     mainwindow.h

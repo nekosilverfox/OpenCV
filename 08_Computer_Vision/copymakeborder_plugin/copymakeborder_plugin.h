@@ -1,25 +1,21 @@
-#ifndef FILTER_PLUGIN_H
-#define FILTER_PLUGIN_H
+#ifndef COPYMAKEBORDER_PLUGIN_H
+#define COPYMAKEBORDER_PLUGIN_H
 
-#include "filter_plugin_global.h"
+#include "copymakeborder_plugin_global.h"
 #include "cvplugininterface.h"
-#include <QObject>
-#include <QSpinBox>
-#include <QTabWidget>
-
 
 namespace Ui {
     class PluginGui;
 }
 
-class FILTER_PLUGINSHARED_EXPORT Filter_Plugin: public CvPluginInterface
+class COPYMAKEBORDER_PLUGINSHARED_EXPORT CopyMakeBorder_Plugin: public QObject, public CvPluginInterface
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.computervision.cvplugininterface")
     Q_INTERFACES(CvPluginInterface)
 public:
-    Filter_Plugin();
-    ~Filter_Plugin();
+    CopyMakeBorder_Plugin();
+    ~CopyMakeBorder_Plugin();
 
     QString title();
     QString version();
@@ -34,10 +30,11 @@ signals:
     void infoMessage(QString msg);
 
 private slots:
+    void on_borderTypeComboBox_currentIndexChanged(int index);
 
 private:
     Ui::PluginGui *ui;
 
 };
 
-#endif // FILTER_PLUGIN_H
+#endif // COPYMAKEBORDER_PLUGIN_H

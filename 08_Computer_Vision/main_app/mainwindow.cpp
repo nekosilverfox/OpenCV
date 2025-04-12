@@ -3,14 +3,13 @@
 
 #include <QObject>
 
-#include "cv_plugin_interface.h"
-#include "../copy_make_border_plugin/copy_make_border_plugin.h"
+#include "cvplugininterface.h"
 
 #if 1
 
-#define PLUGINS_DIR                         "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/cvplugins"
-#define LANGUAGES_DIR                       "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/languages"
-#define THEMES_DIR                          "/Users/fox/雪狸的文件/Programma/OpenCV/07_Computer_Vision/themes"
+#define PLUGINS_DIR                         "/Users/fox/雪狸的文件/Programma/OpenCV/08_Computer_Vision/cvplugins"
+#define LANGUAGES_DIR                       "/Users/fox/雪狸的文件/Programma/OpenCV/08_Computer_Vision/languages"
+#define THEMES_DIR                          "/Users/fox/雪狸的文件/Programma/OpenCV/08_Computer_Vision/themes"
 #define FILE_ON_DISK_DYNAMIC_PROPERTY       "absolute_file_path"
 
 #else

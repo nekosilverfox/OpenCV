@@ -4585,7 +4585,7 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
   
 
-- `Laplacian`、`Scharr`、`Sobel` 和 `spatialGradient`：这些函数用于处理图像导数。图像导数在计算机视觉中非常重要，因为它们可用于检测图像中发生变化的区域，或者更准确地说，**检测图像中发生显著变化的区域**（因为这是导数的用途之一）。在不深入其理论和数学细节的情况下，可以提到它们在**实践中被用于边缘检测或角点检测**，并被 OpenCV 框架中的关键点提取方法广泛使用。在前面的示例和图像中，我们也使用了导数计算核。以下是它们的使用示例及其结果图像。这些截图来自 `Computer_Vision` 项目和 `filter_plugin`（本列表后附有链接）。您始终可以使用 Qt 小部件（如数字框、旋钮和滑块）来获取 OpenCV 函数的不同参数值，从而更好地控制函数行为：
+- `Laplacian`、`Scharr`、`Sobel` 和 `spatialGradient`：这些函数**用于处理图像导数**。图像导数在计算机视觉中非常重要，因为它们可用于检测图像中发生变化的区域，或者更准确地说，**检测图像中发生显著变化的区域**（因为这是导数的用途之一）。在不深入其理论和数学细节的情况下，可以提到它们在**实践中被用于边缘检测或角点检测**，并被 OpenCV 框架中的关键点提取方法广泛使用。在前面的示例和图像中，我们也使用了导数计算核。以下是它们的使用示例及其结果图像。这些截图来自 `Computer_Vision` 项目和 `filter_plugin`（本列表后附有链接）。您始终可以使用 Qt 小部件（如数字框、旋钮和滑块）来获取 OpenCV 函数的不同参数值，从而更好地控制函数行为：
 
     ```cpp
     // Sobel 算子是一种基于一阶导数的边缘检测算法，通过计算图像在水平和垂直方向的梯度来识别边缘。
@@ -4928,7 +4928,7 @@ cvtColor(inputImage, outputImage, CV_GRAY2RGBA);
 OpenCV 还提供 `applyColorMap` 函数（功能与 `remap` 不同但形式相似），用于将输入图像颜色映射到其他色彩。需提供输入图像、输出图像及 `cv::ColormapTypes` 枚举中的映射类型。示例：
 
 ```cpp
-applyColorMap(inputImage, outputImage, COLORMAP_JET);
+applyColorMap(inputImage, outputImage, COLORMAP_JET); // applyColorMap 是逐个像素的映射，每个像素的灰度值会根据预设的 COLORMAP_JET 查找表转换为对应的颜色值。
 ```
 
 上述代码的输出效果如下：
@@ -4939,9 +4939,52 @@ applyColorMap(inputImage, outputImage, COLORMAP_JET);
 
 https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/color_plugin
 
+## 图像阈值化
+
+在计算机视觉领域，==**阈值化**是一种图像分割方法。图像分割即根据像素的强度、颜色或其他属性区分相关联的像素组==。OpenCV 框架提供了多种图像分割函数，本节将学习 OpenCV 中最基础（但广泛使用）的两种阈值分割方法：`threshold` 和 `adaptiveThreshold`。
+
+-   `threshold`：该函数用于对图像应用固定阈值。虽然可用于多通道图像，但通常作用于单通道（灰度）图像以生成二值图像，区分满足阈值与不满足阈值的像素。例如检测图像中最暗区域（接近黑色的像素）：
+
+```cpp
+cvtColor(inputImage, grayScale, CV_BGR2GRAY); 
+
+threshold(grayScaleIn, grayScaleOut, 
+         45,     // 阈值
+         255,    // 最大值
+         THRESH_BINARY_INV); // 阈值类型
+
+cvtColor(grayScale, outputImage, CV_GRAY2BGR); 
+```
+
+上述代码先将输入图像转为灰度空间，应用阈值处理后再转回 BGR 色彩空间。输出结果如下：
+
+![img](doc/img/e7d445a3-2312-4e05-8849-0648a1faba9c.png)
+
+使用 `THRESH_BINARY_INV` 阈值类型时，像素值超过阈值 45 的设为 0（黑色），其余设为 255（白色）。若改用 `THRESH_BINARY` 类型，结果将反转。
 
 
 
+- `adaptiveThreshold`：用于对灰度图像应用自适应阈值。该函数根据传入的自适应方法（`cv::AdaptiveThresholdTypes`）自动计算每个像素的局部阈值。需指定最大阈值、块大小（3/5/7 等奇数）及从块均值中减去的常量值。示例：
+
+```cpp
+cvtColor(inputImage, grayScale, CV_BGR2GRAY); 
+adaptiveThreshold(grayScale, 
+                  grayScale, 
+                  255,                // 最大值
+                  ADAPTIVE_THRESH_GAUSSIAN_C, // 自适应方法
+                  THRESH_BINARY_INV,   // 阈值类型
+                  7,                   // 块大小
+                  0);                  // 常量
+cvtColor(grayScale, outputImage, CV_GRAY2BGR); 
+```
+
+处理流程同上，结果如下：
+
+![img](doc/img/5ae3bca1-cbd1-49c2-954c-49e02235a980.png)
+
+通过以下链接获取与 `Computer_Vision` 项目兼容的 `segmentation_plugin` 源代码。该插件包含本节学习的阈值化功能，并配有可视化界面：
+
+https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/segmentation_plugin
 
 
 
