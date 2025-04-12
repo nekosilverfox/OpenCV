@@ -8,7 +8,7 @@ namespace Ui {
     class PluginGui;
 }
 
-class SEGMENTATION_PLUGINSHARED_EXPORT Segmentation_Plugin: public QObject, public CvPluginInterface
+class SEGMENTATION_PLUGINSHARED_EXPORT Segmentation_Plugin: public CvPluginInterface
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.computervision.cvplugininterface")
@@ -30,15 +30,6 @@ signals:
     void infoMessage(QString msg);
 
 private slots:
-    void on_threshAdaptiveCheck_toggled(bool checked);
-
-    void on_threshAdaptiveCombo_currentIndexChanged(int index);
-
-    void on_threshTypeCombo_currentIndexChanged(int index);
-
-    void on_threshSlider_valueChanged(int value);
-
-    void on_threshMaxSlider_valueChanged(int value);
 
 private:
     Ui::PluginGui *ui;

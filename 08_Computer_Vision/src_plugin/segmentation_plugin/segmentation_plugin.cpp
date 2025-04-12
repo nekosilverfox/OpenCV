@@ -49,11 +49,11 @@ void Segmentation_Plugin::setupUi(QWidget *parent)
                 << "THRESH_TRUNC"
                 << "THRESH_TOZERO"
                 << "THRESH_TOZERO_INV");
-    connect(ui->threshAdaptiveCheck, SIGNAL(toggled(bool)), this, SLOT(on_threshAdaptiveCheck_toggled(bool)));
-    connect(ui->threshAdaptiveCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_threshAdaptiveCombo_currentIndexChanged(int)));
-    connect(ui->threshTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_threshTypeCombo_currentIndexChanged(int)));
-    connect(ui->threshSlider, SIGNAL(valueChanged(int)), this, SLOT(on_threshSlider_valueChanged(int)));
-    connect(ui->threshMaxSlider, SIGNAL(valueChanged(int)), this, SLOT(on_threshMaxSlider_valueChanged(int)));
+    connect(ui->threshAdaptiveCheck, &QCheckBox::toggled, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->threshAdaptiveCombo, &QComboBox::currentIndexChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->threshTypeCombo,     &QComboBox::currentIndexChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->threshSlider,    &QSlider::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
+    connect(ui->threshMaxSlider, &QSlider::valueChanged, this, [=](){emit CvPluginInterface::updateNeeded();});
 
 }
 
@@ -62,14 +62,14 @@ void Segmentation_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outpu
     using namespace cv;
 
     Mat grayScale;
-    cvtColor(inputImage, grayScale, CV_BGR2GRAY);
+    cvtColor(inputImage, grayScale, COLOR_BGR2GRAY);
 
     if(ui->threshAdaptiveCheck->isChecked())
     {
         adaptiveThreshold(grayScale,
                           grayScale,
                           ui->threshMaxSlider->value(),
-                          ui->threshAdaptiveCombo->currentIndex(),
+                          ui->threshAdaptiveCombo->currentIndex(),  // ADAPTIVE_THRESH_GAUSSIAN_C
                           ui->threshTypeCombo->currentIndex(),
                           7,
                           0);
@@ -82,35 +82,6 @@ void Segmentation_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outpu
                   ui->threshMaxSlider->value(),
                   ui->threshTypeCombo->currentIndex());
     }
-    cvtColor(grayScale, outputImage, CV_GRAY2BGR);
-}
 
-void Segmentation_Plugin::on_threshAdaptiveCheck_toggled(bool checked)
-{
-    Q_UNUSED(checked);
-    emit updateNeeded();
-}
-
-void Segmentation_Plugin::on_threshAdaptiveCombo_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    emit updateNeeded();
-}
-
-void Segmentation_Plugin::on_threshTypeCombo_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    emit updateNeeded();
-}
-
-void Segmentation_Plugin::on_threshSlider_valueChanged(int value)
-{
-    emit infoMessage(QString::number(value));
-    emit updateNeeded();
-}
-
-void Segmentation_Plugin::on_threshMaxSlider_valueChanged(int value)
-{
-    emit infoMessage(QString::number(value));
-    emit updateNeeded();
+    cvtColor(grayScale, outputImage, COLOR_GRAY2BGR);
 }
