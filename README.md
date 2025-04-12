@@ -4895,7 +4895,7 @@ for(int i=0; i<inputImage.rows; i++)
 
 您可以使用以下链接获取 transform_plugin 的源代码副本，它与 Computer_Vision 项目兼容，并包含您在本节中学到的变换函数。您可以使用该插件测试并制作本节中的大部分图像。请尝试扩展该插件以控制更多参数，或尝试不同的映射操作，并亲自尝试制作不同的图像。下面是 transform_plugin 源代码的链接：
 
-https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/transform_pluginhttps://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/transform_plugin
+https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/transform_plugin
 
 ## 其他变换
 
@@ -4940,6 +4940,8 @@ applyColorMap(inputImage, outputImage, COLORMAP_JET); // applyColorMap 是逐个
 https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/color_plugin
 
 ## 图像阈值化
+
+> Image thresholding 
 
 在计算机视觉领域，==**阈值化**是一种图像分割方法。图像分割即根据像素的强度、颜色或其他属性区分相关联的像素组==。OpenCV 框架提供了多种图像分割函数，本节将学习 OpenCV 中最基础（但广泛使用）的两种阈值分割方法：`threshold` 和 `adaptiveThreshold`。
 
@@ -4986,7 +4988,103 @@ cvtColor(grayScale, outputImage, CV_GRAY2BGR);
 
 https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/segmentation_plugin
 
+## 离散傅里叶变换
 
+傅里叶变换可用于从时间函数中提取基础频率成分。**离散傅里叶变换**（**DFT**）则是计算采样时间函数（即离散信号）基础频率的方法。从计算机视觉和图像处理的角度来看，您需要将灰度图像视为三维空间中的离散点分布：每个像素的 X 和 Y 坐标表示位置，Z 轴表示像素强度值。若将此分布视为函数生成的空间点集，傅里叶变换即是将该函数转换为其基础频率成分的方法。若您对此概念感到陌生，建议查阅傅里叶变换的数学原理（可参考在线资源或数学教材）。
+
+在数学中，傅里叶分析是一种基于输入数据的傅里叶变换来推导信息的方法。同样，从计算机视觉的角度来看，图像的 DFT 可以用来获取原始图像中不可见的信息。这在很大程度上取决于计算机视觉应用的目标领域，但我们会看到一个示例，以便更好地理解 DFT 的使用方法。因此，首先可以使用 OpenCV 中的 `dft` 函数来获取图像的 DFT。请注意，由于图像（灰度）是一个二维矩阵，因此 dft 实际上将执行二维离散傅里叶变换，产生一个具有复数值的频率函数。下面是 OpenCV 在灰度（单通道）图像上执行 DFT 的过程：
+
+
+
+1. 首先需获取计算图像 DFT 的最优尺寸。对尺寸为 2 的幂次（2、4、8、16 等）或 2 的乘积的数组执行 DFT 变换时效率更高。通过 `getOptimalDFTSize` 函数可获取大于图像尺寸且适合 DFT 的最优尺寸：
+
+        int optH = getOptimalDFTSize( grayImg.rows ); 
+        int optW = getOptimalDFTSize( grayImg.cols ); 
+
+2. 接下来创建具有此最优尺寸的图像，并在新增的宽高区域填充零值。使用本章前面学过的 `copyMakeBorder` 函数实现：
+
+        Mat padded; 
+        copyMakeBorder(grayImg, 
+                        padded, 
+                        0, 
+                        optH - grayImg.rows, 
+                        0, 
+                        optW - grayImg.cols, 
+                        BORDER_CONSTANT, 
+                        Scalar::all(0)); 
+
+3. 现在 `padded` 中存储了最优尺寸的图像。需将其转换为适合输入 `dft` 函数的双通道 `Mat` 类。由于 DFT 需要浮点型 `Mat`，还需将图像转换为浮点类型：
+
+        Mat channels[] = {Mat_<float>(padded), 
+                          Mat::zeros(padded.size(), CV_32F)}; 
+        Mat complex; 
+        merge(channels, 2, complex); 
+
+4.  准备就绪后执行离散傅里叶变换。结果将存储在 `complex` 中，该矩阵将包含复数值：
+
+        dft(complex, complex); 
+
+5.  将复数结果分离为实部和虚部。可复用 `channels` 数组进行拆分：
+
+        split(complex, channels); 
+
+6. 使用 `magnitude` 函数将复数结果转换为幅度值。此结果经过后续处理后可用于可视化：
+
+        Mat mag; 
+        magnitude(channels[0], channels[1], mag); 
+
+7. 幅度值的数值范围较大，需转换为对数尺度以适应灰度图像显示：
+
+        mag += Scalar::all(1); 
+        log(mag, mag); 
+
+8. 由于使用最优尺寸计算 DFT，若结果行列数为奇数需进行裁剪。通过位运算确保尺寸为偶数：
+
+        mag = mag(Rect( 
+                       0, 
+                       0, 
+                       mag.cols & -2, 
+                       mag.rows & -2));
+
+9. 由于结果是一个频谱，显示的是通过 DFT 得到的频率函数产生的波，因此我们应该将结果的原点移到它的中心，也就是目前的左上角。我们可以使用以下代码为结果的四个刻度创建四个 ROI，然后将结果左上角的刻度与右下角的刻度对调，并将右上角的刻度与左下角的刻度对调：
+
+    ```cpp
+    int cx = mag.cols/2; 
+    int cy = mag.rows/2; 
+    
+    Mat q0(mag, Rect(0, 0, cx, cy));   // Top-Left 
+    Mat q1(mag, Rect(cx, 0, cx, cy));  // Top-Right 
+    Mat q2(mag, Rect(0, cy, cx, cy));  // Bottom-Left 
+    Mat q3(mag, Rect(cx, cy, cx, cy)); // Bottom-Right 
+    
+    Mat tmp; 
+    q0.copyTo(tmp); 
+    q3.copyTo(q0); 
+    tmp.copyTo(q3); 
+    
+    q1.copyTo(tmp); 
+    q2.copyTo(q1); 
+    tmp.copyTo(q2); 
+    ```
+
+10. 使用 `normalize` 函数将结果缩放到灰度范围（0-255）：
+
+        normalize(mag, mag, 0, 255, NORM_MINMAX); 
+
+11. 使用 OpenCV 中的 imshow 函数，我们已经可以查看结果，但要在 Qt widget 中查看结果，我们需要将其转换为正确的深度（8 位）和通道数，因此最后一步我们需要以下步骤：
+
+        Mat_<uchar> mag8bit(mag); 
+        cvtColor(mag8bit, outputImage, COLOR_GRAY2BGR); 
+
+处理测试图像后将得到如下结果：
+
+![](doc/img/4d852168-a6aa-4b45-8920-7dd35ca5b7d9.png)
+
+此处结果应解读为从正上方观察到的波形，其中每个像素的亮度实际上代表其高度。尝试在不同类型的图像上运行相同流程，观察结果如何变化。除了视觉检查 DFT 结果（根据具体用例），DFT 还有一个特殊应用场景：在屏蔽 DFT 结果的特定部分后执行**逆 DFT**，以还原原始图像。根据被过滤的频域区域，此过程会以多种方式改变原始图像。
+
+该主题高度依赖原始图像内容，并与 DFT 的数学特性密切相关，但绝对值得深入研究和实验验证。最后，您可通过调用相同的 `dft` 函数并传递 `DCT_INVERSE` 参数执行逆 DFT。显然，此时输入应为计算后的 DFT 结果，输出将还原为图像本身。
+
+参考：OpenCV 文档 - 离散傅里叶变换
 
 
 

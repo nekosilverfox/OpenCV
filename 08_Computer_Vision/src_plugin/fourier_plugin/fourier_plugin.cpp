@@ -44,7 +44,7 @@ void Fourier_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outputImag
 
     Mat grayImg;
 
-    cvtColor(inputImage, grayImg, CV_BGR2GRAY);
+    cvtColor(inputImage, grayImg, COLOR_BGR2GRAY);
 
     int optH = getOptimalDFTSize( grayImg.rows );
     int optW = getOptimalDFTSize( grayImg.cols );
@@ -96,8 +96,8 @@ void Fourier_Plugin::processImage(const cv::Mat &inputImage, cv::Mat &outputImag
     q2.copyTo(q1);
     tmp.copyTo(q2);
 
-    normalize(mag, mag, 0, 255, CV_MINMAX);
+    normalize(mag, mag, 0, 255, NORM_MINMAX);
 
     Mat_<uchar> magI8bit(mag);
-    cvtColor(magI8bit, outputImage, CV_GRAY2BGR);
+    cvtColor(magI8bit, outputImage, COLOR_GRAY2BGR);
 }

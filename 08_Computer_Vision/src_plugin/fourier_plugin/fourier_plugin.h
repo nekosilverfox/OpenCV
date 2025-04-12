@@ -8,7 +8,7 @@ namespace Ui {
     class PluginGui;
 }
 
-class FOURIER_PLUGINSHARED_EXPORT Fourier_Plugin: public QObject, public CvPluginInterface
+class FOURIER_PLUGINSHARED_EXPORT Fourier_Plugin: public CvPluginInterface
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.computervision.cvplugininterface")
