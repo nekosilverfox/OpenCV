@@ -5088,7 +5088,94 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
 
 
+## 在 OpenCV 中绘图
 
+当涉及 OpenCV 和计算机视觉时，在图像上绘制文本和形状是不可避免的。出于无数原因，您需要在输出图像上绘制（输出）一些文本或形状。例如，您可能希望编写一个程序在图像上打印拍摄日期。或者您可能希望在执行人脸检测后在图像中人脸周围绘制方框。尽管 Qt 框架也提供了非常强大的函数来处理此类任务，但使用 OpenCV 本身在图像上绘图也是可行的。在本节中，您将逐步学习使用 OpenCV 的绘图函数（这些函数使用起来非常简单），并附带示例代码和输出结果。
+
+OpenCV 中的绘图函数（可以理解地）接收输入和输出图像，以及大多数函数共有的一些参数。以下是 OpenCV 绘图函数的常见参数及其含义和可能取值：
+
+-   `color`: 该参数是绘制对象的颜色。可以使用 `Scalar` 创建，对于彩色图像需采用 BGR 格式（这是大多数 OpenCV 函数的默认颜色格式）。
+-   `thickness`: 该参数默认为 1，表示绘制对象轮廓的厚度（以像素为单位）。
+-   `lineType`: 该参数可以是 `cv::LineTypes` 枚举中的条目，决定绘制对象轮廓的细节类型。如下图所示，`LINE_AA`（抗锯齿）更平滑，但绘制速度比 `LINE_4` 和 `LINE_8`（默认线型）慢。下图展示了不同 `cv::LineTypes` 的区别：
+
+![](doc/img/8c169885-aabf-43ea-8f98-8a5d9c5dee37.png)
+
+- `shift`: 该参数仅在提供给绘图函数的点和位置包含小数位时使用。此时，每个点的值会先根据 shift 参数进行位移转换。对于标准整数点值，shift 值为零，此时转换不会影响结果：
+
+    ```cpp
+    Point(X , Y) = Point( X * pow(2,-shift), Y * pow(2,-shift) ) 
+    ```
+
+
+
+---
+
+现在让我们开始介绍实际的绘图函数：
+
+- `line`: 通过指定起点和终点绘制直线。以下示例代码在图像上绘制一个红色 X 标记（连接图像对角的两条线），线宽为 3 像素：
+
+    ```
+    cv::line(img, 
+             Point(0,0), 
+             Point(img.cols-1, img.rows-1), 
+             Scalar(0,0,255), 
+             3, 
+             LINE_AA); 
+    
+    cv::line(img, 
+            Point(img.cols-1,0), 
+            Point(0, img.rows-1), 
+            Scalar(0,0,255), 
+            3, 
+            LINE_AA); 
+    ```
+
+    
+
+- `arrowedLine`: 用于绘制带箭头的直线。箭头方向由终点（第二个点）决定，其他用法与 `line` 相同。以下示例代码从图像顶部向接近中心位置绘制带箭头的线：
+
+    ```
+    cv::arrowedLine(img, 
+                    Point(img.cols/2, 0), 
+                    Point(img.cols/2, img.rows/3), 
+                    Scalar(255,255,255), 
+                    5, 
+                    LINE_AA);
+    ```
+
+    
+
+- `rectangle`: 用于在图像上绘制矩形。可以传递 `Rect` 类或两个 `Point` 类（第一个点对应矩形左上角，第二个点对应右下角）。以下示例在图像中心绘制矩形：
+
+    ```cpp
+    cv::rectangle(img, 
+                  Point(img.cols/4, img.rows/4), 
+                  Point(img.cols/4*3, img.rows/4*3), 
+                  Scalar(255,0,0), 
+                  10, 
+                  LINE_AA); 
+    ```
+
+    
+
+- `putText`: 该函数用于在图像上绘制文本。除了 OpenCV 绘图函数的常规参数外，还需提供要绘制的文本内容、字体类型和缩放比例。字体类型可以是 `cv::HersheyFonts` 枚举中的条目，缩放比例是与字体相关的缩放因子。以下代码示例在图像上写入 "Computer Vision"：
+
+    ```
+      cv::putText(img, 
+                  "Computer Vision", 
+                  Point(0, img.rows/2), 
+                  FONT_HERSHEY_PLAIN, 
+                  2, 
+                  Scalar(255,255,255), 
+                  2, 
+                  LINE_AA); 
+    ```
+
+下图展示了本节所有绘图示例在测试图像上依次执行后的结果：
+
+![](doc/img/a60f4373-4120-4653-9c2c-4eee47bca602.png)
+
+除了本节介绍的绘图函数，OpenCV 还提供绘制圆形、多边形、椭圆等函数。所有这些函数的使用方式与本章介绍的方法完全相同。建议尝试使用这些函数来熟悉 OpenCV 的所有绘图功能。您可以通过访问 OpenCV 官网首页（[https://opencv.org/](https://opencv.org/)）轻松获取最新的绘图函数列表。
 
 
 
