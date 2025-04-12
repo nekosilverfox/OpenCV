@@ -4340,6 +4340,12 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
 现在，在开始图像滤波函数之前，让我们通过第一个示例演示 `cv::BorderTypes` 的用法。借此机会，我们还将学习如何为前几章创建的 `Computer_Vision` 项目创建新插件（或克隆现有插件）。步骤如下：
 
+> [!note]
+>
+> 可以使用译者的现成项目（已经对 Qt6 做了优化）：
+>
+> https://github.com/nekosilverfox/OpenCV/tree/main/07_Computer_Vision_BASE
+
 1. **创建插件**  
 
     若已完整跟随本书示例至当前章节，且已在[第五章](#23154d9b-43b1-411a-874a-d82e2a904927.xhtml)下载 `Computer_Vision` 项目，可通过复制 `template_plugin` 文件夹创建新插件。将新文件夹重命名为 `copymakeborder_plugin`，这将成为我们第一个实际插件。
@@ -4480,6 +4486,1040 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 ![](doc/img/d1973b8e-23c6-4259-a74a-441a1d018d17.png)
 
 至此，我们已准备好探索 OpenCV 的其他滤波函数。
+
+---
+
+## OpenCV 中的滤波函数
+
+所有 OpenCV 滤波函数均以图像为输入，生成相同尺寸和通道数的图像。如前所述，它们均包含 `borderType` 参数（已通过示例学习）。除此之外，每个滤波函数有其特定参数用于配置行为。以下是 OpenCV 中可用的滤波函数列表及其描述，文末提供示例插件 `filter_plugin` 的源码链接，该插件包含下述多数滤波功能，并支持通过 GUI 调整参数：
+
+- **`bilateralFilter`**  
+  用于生成双边滤波图像。根据 `sigma` 值和 `diameter` 参数，可得到接近原图的图像或卡通化效果（当 `sigma` 值较高时）。示例代码：
+  ```cpp
+  cv::bilateralFilter(input, output, 
+                     diameter, sigmaColor, sigmaSpace, 
+                     borderType);
+  
+  bilateralFilter(inpMat,outMat,15,200,200); 
+  ```
+
+  效果截图：
+
+  <img src="doc/img/9b8f8fea-fe40-4729-84a2-69b544298b9d.png" alt="img" style="zoom:67%;" />
+
+  
+
+- **`blur`、`boxFilter`、`sqrBoxFilter`、`GaussianBlur`、`medianBlur`**
+
+    均用于图像平滑（模糊）。需指定核大小（`kernelSize`），决定计算滤波像素时的邻域直径。
+
+    - `GaussianBlur` 需提供高斯核在 X/Y 方向的标准差（`sigmaX`、`sigmaY`）。注意：
+        - 高斯核大小必须为**奇数**且正数
+        - 高 `sigma` 值需搭配大核尺寸才能显著影响结果
+
+    示例调用（左为高斯模糊，右为中值模糊）：
+
+    ```cpp
+    Size kernelSize(5,5); 
+    blur(inpMat,outMat,kernelSize); 
+    
+    int depth = -1; // output depth same as source 
+    Size kernelSizeB(10,10); 
+    Point anchorPoint(-1,-1); 
+    bool normalized = true; 
+    boxFilter(inutMat,outMat,depth, 
+       kernelSizeB,anchorPoint, normalized); 
+    
+    double sigma = 10; 
+    GaussianBlur(inpMat,outMat,kernelSize,sigma,sigma); 
+    
+    int apertureSize = 10; 
+    medianBlur(inpMat,outMat,apertureSize); 
+    ```
+
+    ![](doc/img/5db26a4a-b815-43a4-bc7c-785c2d28a738.png)
+
+- **`filter2D`**
+
+  该函数可用于对图像应用自定义滤波器。您需要为该函数提供的一个重要参数是内核矩阵。该函数功能强大，可以产生许多不同的结果，包括与我们之前看到的模糊函数相同的结果，以及许多其他滤镜，具体取决于所提供的内核。下面是几个内核示例、使用方法以及生成的图像。请务必尝试不同的内核（您可以在互联网上搜索大量有用的内核矩阵），并亲自尝试使用此函数：
+
+  ```cpp
+  // Sharpening image 
+  Matx33f f2dkernel(cv::Mat_<float>(3,3) << 
+                    0, -1, 0, 
+                   -1, 5, -1, 
+                    0, -1, 0); 
+  int depth = -1; // output depth same as source 
+  filter2D(inpMat,outMat,depth,f2dkernel); 
+  
+  ***** 
+  
+  // Edge detection 
+  Matx33f f2dkernel(cv::Mat_<float>(3,3) << 
+                    0, +1.5, 0, 
+                    +1.5, -6, +1.5, 
+                    0, +1.5, 0); 
+  int depth = -1; // output depth same as source 
+  filter2D(inpMat,outMat,depth,f2dkernel); 
+  ```
+
+  左侧是前述代码中第一个内核产生的图像（这是我们图像的锐化版本），右侧是第二个内核产生的图像边缘检测结果：
+
+  ![](doc/img/b803466a-f39b-45a5-8f6e-e15e5457fe2d.png)
+
+- `Laplacian`、`Scharr`、`Sobel` 和 `spatialGradient`：这些函数用于处理图像导数。图像导数在计算机视觉中非常重要，因为它们可用于检测图像中发生变化的区域，或者更准确地说，检测图像中发生显著变化的区域（因为这是导数的用途之一）。在不深入其理论和数学细节的情况下，可以提到它们在实践中被用于边缘检测或角点检测，并被 OpenCV 框架中的关键点提取方法广泛使用。在前面的示例和图像中，我们也使用了导数计算核。以下是它们的使用示例及其结果图像。这些截图来自 `Computer_Vision` 项目和 `filter_plugin`（本列表后附有链接）。您始终可以使用 Qt 小部件（如数字框、旋钮和滑块）来获取 OpenCV 函数的不同参数值，从而更好地控制函数行为：
+
+    ```cpp
+                int depth = -1; 
+                int dx = 1; int dy = 1; 
+                int kernelSize = 3; 
+                double scale = 5; double delta = 220; 
+                Sobel(inpMat, outMat, depth,dx,dy,kernelSize,scale,delta); 
+    ```
+
+    以下是上述代码的输出截图：
+
+    ![img](doc/img/9ccaccf3-0a7f-495c-8703-de600d9ade01.png)
+
+    如果使用以下代码：
+
+    ```
+                int depth = -1; 
+                int dx = 1; int dy = 0; 
+                double scale = 1.0; double delta = 100.0; 
+                Scharr(inpMat,outMat,depth,dx,dy,scale,delta); 
+    ```
+
+    将会得到类似这样的结果：
+
+    ![img](doc/img/30ae45da-d38b-4379-ae6c-3da8b9de7464.png)
+
+    对于以下代码：
+
+    ```
+                int depth = -1; int kernelSize = 3; 
+                double scale = 1.0; double delta = 0.0; 
+                Laplacian(inpMat,outMat,depth, kernelSize,scale,delta); 
+    ```
+
+    将会生成类似以下的结果：
+
+    ![img](doc/img/a494560b-65d2-4ffd-9da9-739eae3a1351.png)
+
+- `erode` 和 `dilate`：顾名思义，这些函数可用于实现腐蚀和膨胀效果。两个函数都需要一个结构元素矩阵，该矩阵可以通过直接调用 `getStructuringElement` 函数构建。您可以选择多次运行（或迭代）函数以得到更加强烈的腐蚀或膨胀效果。以下是这两个函数的使用示例及其结果图像：
+
+    ```cpp
+                erode(inputImage, 
+                outputImage, 
+                getStructuringElement(shapeComboBox->currentIndex(), 
+                Size(5,5)), // 内核尺寸
+                Point(-1,-1), // 默认锚点 (-1,-1)
+                iterationsSpinBox->value()); 
+
+以下是生成的图像：
+
+![img](doc/img/dfde1698-e75c-4cea-b4a2-6a3d5edbc363.png)
+
+您可以向 `dilate` 函数传递完全相同的参数。上述代码假设结构元素的形状通过组合框部件（`Combo Box`）获取，其值可以是 `MORPH_RECT`、`MORPH_CROSS` 或 `MORPH_ELLIPSE`。此外，迭代次数通过**数字框部件**（`Spin Box`）设置，该值必须大于零。
+
+-   `morphologyEx`：该函数可用于执行各种形态学操作。它接受一个操作类型参数，以及我们在 `dilate` 和 `erode` 函数中使用的相同参数。以下是可传递给 `morphologyEx` 函数的参数及其含义：
+    -   `MORPH_ERODE`：与 `erode` 函数效果相同。
+    -   `MORPH_DILATE`：与 `dilate` 函数效果相同。
+    -   `MORPH_OPEN`：用于执行开运算。相当于先腐蚀后膨胀，适用于移除图像中的细小噪声。
+    -   `MORPH_CLOSE`：用于执行闭运算。相当于先膨胀后腐蚀，适用于消除线条中的细小断裂等。
+    -   `MORPH_GRADIENT`：提供图像的轮廓，等同于同一图像腐蚀版本与膨胀版本的差值。
+    -   `MORPH_TOPHAT`：用于获取图像与其开运算结果的差值。
+    -   `MORPH_BLACKHAT`：用于获取图像闭运算结果与图像本身的差值。
+
+以下是一个示例代码，可以看到其函数调用方式与 `dilate` 和 `erode` 非常相似。同样假设形态学类型和结构元素形状通过组合框部件（`Combo Box`）选择，迭代次数通过数字框部件（`SpinBox`）设置：
+
+```cpp
+            morphologyEx(inputImage, 
+                outputImage, 
+                morphTypeComboBox->currentIndex(), 
+                getStructuringElement(shapeComboBox->currentIndex(), 
+                Size(5,5)), // 内核尺寸
+                Point(-1,-1), // 默认锚点
+            iterationsSpinBox->value()); 
+```
+
+以下是不同形态学操作的结果图像：
+
+![img](doc/img/e3558967-c7cc-498c-9347-eca091444a86.png)
+
+您可以通过以下链接获取与 `Computer_Vision` 项目兼容的 `filter_plugin` 源代码，其中包含本节学习的大部分图像滤波函数。您可以使用此插件进行测试并生成本节中展示的大多数图像。尝试扩展插件以控制更多参数，或为其添加更多功能。以下是 `filter_plugin` 源代码的链接：
+
+https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/filter_plugin
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+---
+
+>  Availability
+
+## 可用性
+
+尽管 OpenCV 和 Qt 都是跨平台框架，但某些算法（甚至类或函数）仍可能依赖平台特定的能力，尤其是出于性能考虑。需要特别注意并明确的是，您必须确保所使用的算法在目标发布平台上可用。最佳的信息来源通常是 OpenCV 和 Qt 框架中底层类的文档页面。
+
+您可以通过以下链接下载关键点检测、描述子提取和匹配的完整源代码。您可以使用此插件比较不同算法的准确性和速度。显然，该插件与我们在本书中构建的 `computer_vision` 项目兼容：[https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch07/keypoint_plugin](https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch07/keypoint_plugin)。
+
+
+
+**总结:**
+
+特征检测、描述和匹配可能是计算机视觉中仍处于快速发展阶段的重要且热门的话题。本章介绍的算法仅是现有算法中的一小部分，选择它们的原因在于它们基本可免费公开使用，且默认包含在 OpenCV 的 `feature2d` 模块中。如果您希望学习更多算法，可以查看**额外2D特征框架**（**xfeature2d**），其中包含非免费算法（如 SURF 和 SIFT）或仍处于实验阶段的算法。当然，您需要单独下载这些算法并将其添加到 OpenCV 源码中，重新编译后才能将其功能集成到 OpenCV 安装中。建议尝试这些算法，但同时也请确保通过不同图像和多种参数实践本章所学算法，以加深理解。
+
+完成本章学习后，您现在可以使用特征和描述子相关算法来检测关键点、提取特征并进行匹配，以实现目标检测或图像对比。利用本章介绍的类，您可以正确显示匹配结果，并测量每个过程的性能以确定其速度。
+
+在[第8章](#a9e38bde-c5d1-4d59-b277-4c6c8258f61a.xhtml) *多线程*中，我们将学习 Qt 中的多线程与并行处理（及其在 OpenCV 中的应用），以及如何高效创建和使用独立于应用程序主线程的线程与进程。通过下一章的知识，我们将为处理视频流和计算机视觉任务做好准备——这些任务需要在视频文件或相机帧的连续帧上持续执行。
+
+
+
+# 多线程
+
+不久之前，计算机程序还被设计为按顺序逐条执行指令。事实上，这种方法的理解和实现如此简单，以至于即使在今天，我们仍用这种方式编写脚本和简单程序，以串行方式完成任务。然而，随着时间推移，尤其是更强大处理器的兴起，多任务处理成为核心问题。计算机被期望同时执行多个任务，因为它们足够快速，能处理多个程序所需的指令且仍有空闲时间。当然，随着时间的推移，更复杂的程序（如游戏、图形程序等）被开发，处理器必须公平分配不同程序的时间片，以确保它们都能正确运行。程序（或更准确地说，**进程**）被拆分为称为**线程**的更小单元。这种多线程方法至今帮助创建了响应迅速、能与其他类似或无关进程并行运行的进程，从而带来流畅的多任务体验。
+
+在单处理器（单核）计算机中，每个线程被分配一个时间片，处理器显然一次只能处理一个线程，但线程间的切换通常非常快速，从用户角度看像是真正的并行。然而如今，即使人们口袋中的智能手机处理器，也具备通过多核处理多线程的能力。
+
+为确保清晰理解线程及其使用方法，以及为何不使用线程无法编写强大的计算机视觉程序，我们先明确进程与线程的核心区别：
+
+-   **进程**类似于独立程序，由操作系统直接执行
+-   **线程**是进程的子集，即一个进程可包含多个线程
+-   进程之间（通常）相互独立，而线程共享内存和资源（注意：进程可通过操作系统提供的机制交互）
+
+每个进程根据设计方式，可能会创建和执行不同线程以实现最佳性能和响应性。每个线程则执行进程所需的特定任务。在 Qt 和 GUI 编程中，典型的例子是进度信息显示。当运行耗时复杂的进程时，通常需要显示进度状态信息（如剩余工作量百分比、预计完成时间等）。最佳实践是将实际任务与 GUI 更新任务分离到不同线程。计算机视觉中常见的另一个例子是视频（或摄像头）处理：需要确保视频被正确读取、处理和实时显示。本章将重点学习 Qt 框架的多线程能力，并处理此类案例。
+
+本章将涵盖以下主题：
+-   Qt 中的多线程方法
+-   如何使用 `QThread` 和 Qt 的多线程类
+-   如何创建响应式 GUI
+-   如何处理多幅图像
+-   如何处理多摄像头或视频流
+
+
+
+## Qt 中的多线程
+
+Qt 框架提供了多种技术来处理应用程序中的多线程。`QThread` 类用于处理各类多线程功能，正如本章所述，它也是 Qt 框架中最强大灵活的多线程处理方式。除 `QThread` 外，Qt 框架还提供了其他命名空间、类和函数来满足不同多线程需求。以下是相关组件的概览，后续我们将通过示例展示其用法：
+
+-   **`QThread`**：这是 Qt 框架中所有线程的基类。可以通过子类化创建新线程（需重写 `run` 方法），也可以直接创建其实例，并通过 `moveToThread` 函数将任何 Qt 对象（`QObject` 子类）移至新线程。
+-   **`QThreadPool`**：用于管理线程并通过复用现有线程降低创建成本。每个 Qt 应用程序都包含一个全局 `QThreadPool` 实例，可通过 `QThreadPool::globalInstance()` 静态函数访问。此类需与 `QRunnable` 类实例配合使用，以控制和管理可运行对象的生命周期。
+-   **`QRunnable`**：提供另一种创建线程的方式，是所有可运行对象的基类。与 `QThread` 不同，`QRunnable` 并非 `QObject` 子类，仅作为代码块的运行接口。需子类化并重写 `run` 函数。`QRunnable` 实例由 `QThreadPool` 管理。
+-   **同步类**：包括 `QMutex`、`QMutexLocker`、`QSemaphore`、`QWaitCondition`、`QReadLocker`、`QWriteLocker` 等，用于处理线程间同步问题。可避免线程间计算覆盖、单线程设备的并发读写等问题。
+-   **`QtConcurrent`**：该命名空间提供高层 API 简化多线程开发，无需直接处理互斥锁和信号量等同步机制。
+-   **`QFuture` 系列类**：包括 `QFutureWatcher`、`QFututeIterator` 和 `QFutureSynchronizer`，与 `QtConcurrent` 配合使用以处理多线程异步操作结果。
+
+Qt 多线程开发通常有两种方式：
+1. **基于 `QThread` 的低层方法**：灵活性强但需更多编码，需手动处理线程管理细节。
+2. **基于 `QtConcurrent` 的高层方法**：通过声明式 API 简化多线程开发，适合快速实现并行任务。
+
+## 使用 QThread 实现底层多线程
+
+本节将通过示例项目学习两种 `QThread` 使用方式：
+1. **子类化重写 `run` 方法**
+2. **使用 `moveToThread` 迁移对象**
+
+我们将创建一个视频处理项目，通过独立线程处理视频源的输入/输出帧，保持 GUI 主线程的响应性。此案例聚焦计算机视觉与 GUI 开发的典型应用场景，但方法可推广至其他多线程问题。
+
+（注：示例代码将在后续翻译中按用户要求以 C++ 代码块形式呈现）
+
+## 子类化 QThread
+
+首先，在 Qt Creator 中创建一个名为 `MultithreadedCV` 的 Qt Widgets 应用。按照本书前几章的方法将 OpenCV 框架添加到项目中：在 `MultithreadedCV.pro` 文件中加入以下配置（详见[第2章](#9009a91a-b569-44fc-b9b4-a5f6a8421ba8.xhtml) *创建首个 Qt+OpenCV 项目* 或 [第3章](#a8eea629-92d7-43eb-bce6-65057bf1b9b2.xhtml) *构建完整的 Qt+OpenCV 项目*）：
+
+```pro
+        win32: { 
+          include("c:/dev/opencv/opencv.pri") 
+        } 
+        unix: !macx{ 
+          CONFIG += link_pkgconfig 
+          PKGCONFIG += opencv 
+        } 
+        unix: macx{ 
+        INCLUDEPATH += /usr/local/include 
+          LIBS += -L"/usr/local/lib" \ 
+          -lopencv_world 
+        } 
+```
+
+接着，在 `mainwindow.ui` 文件中添加两个标签部件，布局如下。我们将用这两个标签分别显示计算机默认摄像头的原始视频帧和处理后的视频帧：
+
+![img](doc/img/0b4f39ff-6005-4198-b087-d3140cc06205.png)
+
+确保左侧标签的 `objectName` 属性设为 `inVideo`，右侧设为 `outVideo`，并将它们的水平对齐属性（`alignment/Horizontal`）设为 `AlignHCenter`。
+
+现在，右键点击项目 PRO 文件选择 "Add New"，创建一个名为 `VideoProcessorThread` 的新类。在新建类向导中选择 "C++ Class"，确保配置如下截图所示：
+
+![img](doc/img/e1a79f82-e6b3-46e5-96fd-e864574766f4.png)
+
+创建完成后，项目中会新增 `videoprocessorthread.h` 和 `videoprocessor.cpp` 文件。首先，通过修改头文件使该类继承 `QThread`（将基类从 `QObject` 替换为 `QThread`），并包含 OpenCV 头文件：
+
+```cpp
+    #include <QThread> 
+    #include "opencv2/opencv.hpp" 
+ 
+    class VideoProcessorThread : public QThread 
+```
+
+您同样需要更新 `videoprocessor.cpp` 文件，以便调用正确的构造函数：
+
+```
+    VideoProcessorThread::VideoProcessorThread(QObject *parent) 
+      : QThread(parent) 
+```
+
+现在，我们需要在 `videoprocessor.h` 文件中添加一些必要的声明。在类的私有成员区域添加以下一行：
+
+```
+    void run() override; 
+```
+
+最后，在 `videoprocessorthread.cpp` 文件中添加以下代码块：
+
+```
+    void VideoProcessorThread::run() 
+    { 
+      using namespace cv; 
+      VideoCapture camera(0); 
+      Mat inFrame, outFrame; 
+      while(camera.isOpened() && !isInterruptionRequested()) 
+      { 
+        camera >> inFrame; 
+        if(inFrame.empty()) 
+            continue; 
+ 
+        bitwise_not(inFrame, outFrame); 
+ 
+        emit inDisplay( 
+             QPixmap::fromImage( 
+                QImage( 
+                  inFrame.data, 
+                  inFrame.cols, 
+                  inFrame.rows, 
+                  inFrame.step, 
+                  QImage::Format_RGB888) 
+                      .rgbSwapped())); 
+ 
+        emit outDisplay( 
+             QPixmap::fromImage( 
+                QImage( 
+                 outFrame.data, 
+                   outFrame.cols, 
+                   outFrame.rows, 
+                   outFrame.step, 
+                   QImage::Format_RGB888) 
+                     .rgbSwapped())); 
+      } 
+    }  
+```
+
+# 子类化 QThread（续）
+
+重写的 `run` 函数用于执行视频处理任务。如果在 `mainwindow.cpp` 中直接以循环执行相同代码，会导致程序无响应并最终崩溃。但通过子类化 `QThread` 的方法，相同代码现在运行在独立线程中。注意：必须通过调用 `start` 函数（而非 `run`）启动线程！`run` 函数应由线程内部自动调用，开发者只需重写其逻辑。要控制线程执行行为，需使用以下关键函数：
+
+- **`start`**：启动未运行的线程。通过调用我们实现的 `run` 函数开始执行。可传入优先级参数控制线程调度：
+    - `QThread::IdlePriority`（仅当无其他线程运行时调度）
+    - `QThread::LowestPriority`
+    - `QThread::LowPriority`
+    - `QThread::NormalPriority`
+    - `QThread::HighPriority`
+    - `QThread::HighestPriority`
+    - `QThread::TimeCriticalPriority`（尽可能频繁调度）
+    - `QThread::InheritPriority`（默认值，继承父线程优先级）
+
+- **`terminate`**：强制终止线程（仅限极端情况使用，应尽量避免）
+- **`setTerminationEnabled`**：启用/禁用 `terminate` 函数
+- **`wait`**：阻塞当前线程直至目标线程完成或超时（毫秒）
+- **`requestInterruption`** 与 **`isInterruptionRequested`**：设置/获取中断请求状态，用于安全终止无限循环任务
+- **`isRunning`** 与 **`isFinished`**：查询线程执行状态
+
+除了上述函数，`QThread` 还包含 `quit`、`exit`、`idealThreadCount` 等实用方法。我们不妨亲自查看一下这些函数，并思考每个函数的用例。QThread 是一个功能强大的类，可以帮助您最大限度地提高应用程序的效率。
+
+让我们继续我们的示例。在运行函数中，我们使用 OpenCV VideoCapture 类来读取视频帧（永远），并对 Mat 帧应用一个简单的 bitwise_not 运算符（此时我们可以进行任何其他图像处理，因此 bitwise_not 只是一个例子，而且是一个相当简单的例子来说明我们的观点），然后通过 QImage 将其转换为 QPixmap，然后使用两个信号发送原始帧和修改后的帧。请注意，在我们将永远进行下去的循环中，我们将始终检查摄像机是否仍处于打开状态，并检查该线程是否有中断请求。
+
+---
+
+现在，让我们在 MainWindow 中使用线程。首先将其头文件包含在 mainwindow.h 文件中：
+
+```
+    #include "videoprocessorthread.h" 
+```
+
+然后，在 mainwindow.h 文件中的 MainWindow 私有成员部分添加以下一行：
+
+```
+    VideoProcessorThread processor; 
+```
+
+现在，在 MainWindow 构造函数中的 setupUi 行之后添加以下代码：
+
+```
+    connect(&processor, 
+            SIGNAL(inDisplay(QPixmap)), 
+            ui->inVideo, 
+            SLOT(setPixmap(QPixmap))); 
+ 
+    connect(&processor, 
+            SIGNAL(outDisplay(QPixmap)), 
+            ui->outVideo, 
+            SLOT(setPixmap(QPixmap))); 
+  
+    processor.start(); 
+```
+
+然后，在 MainWindow 析构函数中的 delete ui; 行之前添加以下几行：
+
+```
+    processor.requestInterruption(); 
+    processor.wait(); 
+```
+
+我们简单地将 `VideoProcessorThread` 类中的两个信号连接到 `MainWindow` GUI 中添加的两个标签（label），并在程序启动时立即启动该线程。我们还要求在 `MainWindow` 关闭前（GUI 被删除前）立即停止该线程。`wait` 函数调用确保在继续执行删除指令前等待线程完成清理和安全终止。尝试运行此代码自行验证，程序启动后您应该会看到类似下图的界面：
+
+![](doc/img/34b59246-3467-43c8-ab5b-47abd2495e8e.png)
+
+计算机上的默认摄像头视频会在程序启动时立即开始采集，并在关闭程序时停止。您可以尝试通过向 `VideoProcessorThread` 类传递摄像头索引号或视频文件路径来扩展其功能。您可以根据需要实例化任意多个 `VideoProcessorThread` 类，只需确保将信号正确连接到 GUI 上的对应控件。通过这种方式，您可以在运行时动态处理和显示多个视频流或摄像头画面。
+
+## 使用 `moveToThread` 函数
+
+正如前文所述，您也可以使用任何 `QObject` 子类的 `moveToThread` 函数来确保其在独立线程中运行。为了具体说明其工作原理，我们将通过创建完全相同的 GUI 并新建一个 C++ 类（与之前类似）来复现相同示例，但此次将其命名为 `VideoProcessor`。不同之处在于，此次创建的类**无需继承自 `QThread`**，而是保留其 `QObject` 基类特性（默认继承）。只需在 `videoprocessor.h` 文件中添加以下成员：
+
+```cpp
+signals:
+    void inDisplay(QPixmap pixmap);
+    void outDisplay(QPixmap pixmap);
+
+public slots:
+    void startVideo();
+    void stopVideo();
+
+private:
+    bool stopped;
+```
+
+信号与之前的完全相同。stopped 是一个标志，我们将用它来帮助停止视频，使其不会一直持续下去。startVideo 和 stopVideo 是用于启动和停止处理默认网络摄像头视频的函数。现在，我们可以切换到 videoprocessor.cpp 文件，并添加以下代码块。与之前的代码非常相似，明显不同的是，我们不需要实现 run 函数，因为它不是 QThread 子类，而且我们可以根据自己的喜好为函数命名：
+
+```
+    void VideoProcessor::startVideo() 
+    { 
+      using namespace cv; 
+      VideoCapture camera(0); 
+      Mat inFrame, outFrame; 
+      stopped = false; 
+      while(camera.isOpened() && !stopped) 
+      { 
+        camera >> inFrame; 
+        if(inFrame.empty()) 
+            continue; 
+ 
+        bitwise_not(inFrame, outFrame); 
+ 
+        emit inDisplay( 
+          QPixmap::fromImage( 
+             QImage( 
+                  inFrame.data, 
+                  inFrame.cols, 
+                  inFrame.rows, 
+                  inFrame.step, 
+                  QImage::Format_RGB888) 
+                    .rgbSwapped())); 
+ 
+        emit outDisplay( 
+           QPixmap::fromImage( 
+             QImage( 
+                 outFrame.data, 
+                 outFrame.cols, 
+                 outFrame.rows, 
+                 outFrame.step, 
+                 QImage::Format_RGB888) 
+                    .rgbSwapped())); 
+      }   
+    } 
+ 
+    void VideoProcessor::stopVideo() 
+    { 
+      stopped = true; 
+    } 
+```
+
+现在我们可以在 MainWindow 类中使用它。确保为 VideoProcessor 类添加包含文件，然后在 MainWindow 的私有成员部分添加以下内容：
+
+```
+VideoProcessor *processor; 
+```
+
+现在，在 mainwindow.cpp 文件的 MainWindow 构造函数中添加以下代码：
+
+```
+    processor = new VideoProcessor(); 
+ 
+    processor->moveToThread(new QThread(this)); 
+ 
+    connect(processor->thread(), 
+          SIGNAL(started()), 
+          processor, 
+          SLOT(startVideo())); 
+ 
+   connect(processor->thread(), 
+          SIGNAL(finished()), 
+          processor, 
+          SLOT(deleteLater())); 
+ 
+   connect(processor, 
+        SIGNAL(inDisplay(QPixmap)), 
+        ui->inVideo, 
+        SLOT(setPixmap(QPixmap))); 
+ 
+   connect(processor, 
+        SIGNAL(outDisplay(QPixmap)), 
+        ui->outVideo, 
+        SLOT(setPixmap(QPixmap))); 
+ 
+   processor->thread()->start(); 
+```
+
+在之前的代码片段中，我们首先创建了 `VideoProcessor` 的实例。请注意，我们在构造函数中**未指定任何父对象**，并且将其定义为指针。这在计划使用 `moveToThread` 函数时至关重要——**拥有父对象的对象无法被迁移到新线程**[3,5](@ref)。第二个关键点是，**不应直接调用 `VideoProcessor` 的 `startVideo` 函数**，而应通过将适当的信号连接到该槽函数来间接触发。在本例中，我们使用了其所属线程的 `started` 信号，但您也可以使用具有相同签名的其他信号。其余部分均围绕信号连接展开。
+
+在 `MainWindow` 析构函数中添加以下代码：
+```cpp
+processor->stopVideo();
+processor->thread()->quit();
+processor->thread()->wait();
+```
+
+这一点不言自明，但为了清楚起见，我们在这里还要注意一点，那就是线程像这样启动后，必须通过调用 quit 函数来停止，而且其对象中不应有任何正在运行的循环或挂起的指令。如果不满足这两个条件中的任何一个，你在处理线程时就会面临严重的问题。
+
+# 图像变换能力
+
+在本节中，您将学习OpenCV提供的图像变换能力。根据OpenCV网页，图像变换通常分为两类：**几何变换**（geometric transformations）和**其他变换**（miscellaneous transformations，即除几何变换外的所有其他变换）。这种分类的原因将在下文解释。
+
+**几何变换**主要处理图像的几何属性，如尺寸、方向、形状等。需要注意的是，几何变换不会改变图像内容，而是通过移动像素改变图像的形态。与前一节中的滤波操作类似，几何变换函数也需要处理图像边界外的像素外推（extrapolation）问题，即对不存在像素进行假设。为此，可以使用本章第一个示例`copymakeborder_plugin`中学习的`cv::BorderTypes`枚举。
+
+此外，几何变换函数还需要处理像素插值（interpolation）问题。由于变换后图像的像素位置可能为浮点数（而非整数），而每个像素只能有一个颜色值，因此需要决定该位置的像素值。以最简单的几何变换——图像缩放（通过`resize`函数实现）为例：当将图像缩小一半时，至少半数像素的新位置将包含非整数值。例如，原始位置(2,2)的像素在缩放后位于(1,1)，但位置(3,2)的像素将需要映射到(1.5,1)等位置。OpenCV提供了多种插值方法（定义于`cv::InterpolationFlags`枚举），包括：
+
+- `INTER_NEAREST`：最近邻插值
+- `INTER_LINEAR`：双线性插值
+- `INTER_CUBIC`：双三次插值
+- `INTER_AREA`：像素区域关系重采样
+- `INTER_LANCZOS4`：8x8邻域的Lanczos插值
+
+几乎所有几何变换函数都需要提供`cv::BorderType`和`cv::InterpolationFlags`参数来处理外推和插值需求。
+
+# 线程同步工具
+
+多线程编程通常需要处理因并行性及底层操作系统对线程运行时序的自主调度而产生的线程间冲突问题。像Qt这样的强大多线程框架必须提供相应的解决方案，幸运的是正如本章将学习的——它确实做到了这一点。
+
+本节我们将探讨多线程编程中可能出现的典型问题，以及Qt框架中用于解决这些问题的类库。这些类统称为**线程同步工具**。线程同步的核心在于：通过简单易用的机制让线程能够感知其他线程的状态，同时仍能独立执行自身特定任务。
+
+# 互斥锁
+
+如果本节及后续关于线程同步工具的内容对您来说已不陌生，那么您将能轻松理解相关内容，并快速掌握 Qt 中同类工具的使用方法；否则，建议您仔细研读这些章节。现在让我们从第一个线程同步工具开始。
+
+当两个线程同时访问同一对象（如变量或类实例等），且对对象的操作顺序至关重要时，最终结果可能与预期不符。我们通过一个例子来说明这个问题：假设一个线程持续读取名为 `image` 的 `Mat` 类实例（无论是在 `QThread` 的 `run` 函数重写中，还是通过 `moveToThread` 函数跨线程调用）：
+
+```cpp
+forever 
+{ 
+ image = imread("image.jpg"); 
+} 
+```
+
+`forever` 是 Qt 宏（等效于 `for(;;)`），用于创建无限循环。这类宏可提高代码可读性。
+
+同时，另一个线程持续修改该图像，执行如下简单图像处理任务（转换为灰度图并缩放）：
+
+cpp
+
+复制
+
+```cpp
+forever 
+{ 
+   cvtColor(image, image, COLOR_BGR2GRAY); 
+   resize(image, image, Size(), 0.5, 0.5); 
+} 
+```
+
+若两个线程同时运行，可能出现以下情况：第一个线程的 `imread` 调用在第二个线程的 `cvtColor` 之后、`resize` 之前执行。这将导致最终结果并非预期的半尺寸灰度图。由于线程切换时机由操作系统决定，此类竞态条件（race condition）无法通过代码逻辑直接避免。
+
+解决这个问题的方法称为**访问序列化**（access serialization），通常通过互斥锁（mutex）实现。互斥锁通过以下机制保护共享对象：
+
+1. **锁定（lock）**：线程访问对象前需获取锁
+2. **解锁（unlock）**：访问完成后释放锁
+
+Qt 提供的 `QMutex` 类简化了这一过程。以下是改进后的代码示例：
+
+cpp
+
+复制
+
+```cpp
+// 第一个线程
+forever 
+{ 
+  imageMutex.lock();  // 锁定互斥量
+  image = imread("image.jpg"); 
+  imageMutex.unlock(); // 解锁
+} 
+
+// 第二个线程
+forever 
+{ 
+  imageMutex.lock(); 
+  cvtColor(image, image, COLOR_BGR2GRAY); 
+  resize(image, image, Size(), 0.5, 0.5); 
+  imageMutex.unlock(); 
+} 
+```
+
+当线程 A 持有锁时，线程 B 调用 `lock()` 会被阻塞，直到线程 A 调用 `unlock()` 释放锁。这种机制类似于钥匙与锁的关系：只有持有钥匙（调用 `lock()`）的线程才能解锁。
+
+虽然直接使用 `lock()/unlock()` 可行，但在复杂场景中容易出错。Qt 推荐使用 **RAII 风格的 `QMutexLocker`** 自动管理锁的生命周期：
+
+cpp
+
+复制
+
+```cpp
+// 第一个线程
+forever 
+{ 
+  QMutexLocker locker(&imageMutex);  // 构造时自动锁定
+  image = imread("image.jpg"); 
+  // 析构时自动解锁（离开作用域时）
+} 
+
+// 第二个线程
+forever 
+{ 
+  QMutexLocker locker(&imageMutex); 
+  cvtColor(image, image, COLOR_BGR2GRAY); 
+  resize(image, image, Size(), 0.5, 0.5); 
+} 
+```
+
+当您通过传递互斥项来构造 QMutexLocker 类时，互斥项就会被锁定，而一旦 QMutexLocker 被销毁（对于一个实例来说，当它退出作用域时），互斥项就会被解锁。
+
+`QMutexLocker` 的优势在于：
+
+- 自动处理锁的获取与释放
+- 避免忘记解锁导致的死锁
+- 异常安全（析构时自动释放锁）
+
+
+
+# 读写锁
+
+尽管互斥锁（mutex）功能强大，但它们缺乏某些能力，例如不同类型的锁。虽然互斥锁在访问序列化中非常有用，但对于需要区分读写操作的场景（依赖于读锁和写锁两种类型）效果有限。我们通过一个示例来理解：假设我们希望多个线程能同时从对象（如变量、类实例、文件等）中读取数据，但确保任意时刻只有一个线程能修改（写入）该对象。此时可以使用**读写锁机制**，本质上是增强版的互斥锁。Qt 框架提供了 `QReadWriteLock` 类，其用法与 `QMutex` 类似，但提供了两种锁函数：
+
+- **`lockForRead`**：用于读取操作的加锁
+- **`lockForWrite`**：用于写入操作的加锁
+
+以下是各锁函数的行为特性：
+
+- 当线程调用 `lockForRead` 时，其他线程仍可调用 `lockForRead` 并访问受保护对象进行读取（“受保护对象”指被锁保护的对象）。
+- 若线程已调用 `lockForRead`，任何试图调用 `lockForWrite` 的线程将被阻塞，直到该线程调用 `unlock`。
+- 当线程调用 `lockForWrite` 时，所有其他线程（无论读写）将被阻塞，直到该线程调用 `unlock`。
+- 若某线程在已有读锁存在的情况下调用 `lockForWrite`，所有新调用 `lockForRead` 的线程必须等待写锁线程完成。因此，请求写锁的线程会被赋予更高优先级。
+
+简言之，`QReadWriteLock` 确保：
+- **多个读线程==可同时访问==对象**，写线程需等待所有读线程完成
+- **==仅一个写线程==能修改对象**，且为避免写线程因过多读线程而无限等待，写线程会被优先调度
+
+以下是如何使用 `QReadWriteLock` 的示例代码。假设 `lock` 变量为 `QReadWriteLock` 类型，`read_image` 是读取受保护对象的函数：
+
+```cpp
+forever 
+{ 
+   lock.lockForRead(); 
+   read_image(); 
+   lock.unlock(); 
+}
+```
+
+类似地，在需要写入对象的线程中，我们将使用类似的功能（write_image 是一个写入对象的任意函数）：
+
+```
+    forever 
+    { 
+     lock.lockForWrite(); 
+     write_image(); 
+     lock.unlock(); 
+    } 
+```
+
+
+
+与 `QMutex` 类似（我们使用 `QMutexLocker` 简化锁的加解锁操作），`QReadWriteLock` 也可通过 `QReadLocker` 和 `QWriteLocker` 类更便捷地管理锁。对于前一示例中的读线程，代码可优化为：
+
+```cpp
+forever 
+{ 
+  QReadLocker locker(&lock); // 自动加读锁
+  Read_image();              // 执行读取操作
+}                           // locker 析构时自动解锁
+```
+
+对于写线程，则使用：
+
+```
+forever 
+{ 
+  QWriteLocker locker(&lock); // 自动加写锁
+  write_image();              // 执行写入操作
+}                            // locker 析构时自动解锁
+```
+
+`QReadLocker` 和 `QWriteLocker` 在构造时自动调用对应的 `lockForRead` 或 `lockForWrite`，并在析构时自动调用 `unlock`，确保锁的释放，避免死锁风险。
+
+# 信号量
+
+在多线程编程中，有时需要确保多个线程能按需访问有限数量的相同资源。例如，运行程序的设备可能内存非常有限，我们希望需要大量内存的线程能根据可用内存量调整行为。这类问题通常通过**信号量**（Semaphore）机制解决。信号量类似于增强型互斥锁，不仅能加锁/解锁，还能跟踪可用资源数量。
+
+Qt 框架提供了 `QSemaphore` 类来处理信号量。由于信号量用于基于可用资源数量的线程同步，其函数名也更贴合此用途。以下是 `QSemaphore` 类的主要函数：
+
+- **`acquire`**：用于获取指定数量的所需资源。若资源不足，线程将被阻塞直至资源足够。
+- **`release`**：用于释放已使用的指定数量资源。
+- **`available`**：获取当前可用资源数。可用于让线程在资源不足时执行其他任务而非等待。
+
+示例说明：假设我们有 100MB 的共享内存空间供所有线程使用，每个线程根据任务需求（如处理不同尺寸的图像）需要 *X* MB 内存。通过 `QSemaphore` 可确保线程仅在可用内存范围内运行：
+
+```cpp
+QSemaphore memSem(100); // 初始化信号量，总资源量100
+```
+
+在每个线程中，内存密集型操作前后进行资源获取和释放：
+
+```
+memSem.acquire(X);      // 申请X MB内存
+process_image();        // 内存密集型处理
+memSem.release(X);      // 释放X MB内存
+```
+
+注意：若某线程中 *X* 超过 100，该线程将在 `acquire` 处阻塞，直到其他线程通过 `release` 释放足够资源。通过调用 `release` 并传入大于已获取资源的数值，可动态增加可用资源总量。
+
+# 等待条件
+
+多线程编程中的另一个常见问题是：某个线程可能需要等待特定条件（而非单纯等待操作系统调度）。若此时线程使用互斥锁或读写锁，可能会阻塞所有其他线程，因为该线程仍在运行中（只是等待某个条件）。理想情况下，该线程应在等待条件时释放锁并进入休眠，让其他线程继续运行；当条件满足时，再由其他线程唤醒。
+
+Qt 框架提供了 `QWaitCondition` 类来处理此类问题。任何需要等待条件的线程均可使用该类。我们通过一个简单示例说明：假设多个线程操作 `Mat` 类（具体为图像），其中一个线程负责读取该图像（仅当图像存在时）。假设另一个进程、程序或用户负责生成此图像文件，因此图像可能暂时不可用。由于多个线程共享该图像，需使用互斥锁确保线程逐一访问。但读取线程仍需在图像不存在时等待。此时，读取线程的代码如下：
+
+```cpp
+forever 
+{ 
+  mutex.lock(); 
+  imageExistsCond.wait(&mutex); 
+  read_image(); 
+  mutex.unlock(); 
+} 
+```
+
+注意：`mutex` 为 `QMutex` 类型，`imageExistsCond` 为 `QWaitCondition` 类型。上述代码意为：加锁后开始工作（读取图像），但如果需要等待图像存在，则释放互斥锁以便其他线程运行。这需要另一个线程负责唤醒读取线程。例如：
+
+cpp
+
+Copy
+
+```
+forever 
+{ 
+  if(QFile::exists("image.jpg")) 
+      imageExistsCond.wakeAll(); 
+} 
+```
+
+此线程持续检查图像文件是否存在，若存在则尝试唤醒所有等待该条件的线程。也可使用 `wakeOne` 替代 `wakeAll`，仅随机唤醒一个等待线程。这在只需一个线程响应条件时非常有用。
+
+本节讨论的线程同步工具（或原语）到此结束。介绍的类是 Qt 框架中与线程协同处理同步的核心类。建议查阅 Qt 文档了解这些类的其他函数，以进一步提升多线程应用的行为。编写此类底层多线程应用时，必须确保线程通过本节介绍的类相互感知。需注意，这些技术并非线程同步的唯一方式，随着程序复杂度提升，可能需要混合使用、调整甚至创造新的同步方法。
+
+# 使用 QtConcurrent 实现高层多线程
+
+除了前文介绍的底层方法外，Qt 框架还提供了一套**高层 API**，无需处理互斥锁等线程同步工具即可创建多线程程序。`QtConcurrent` 命名空间（即 Qt Concurrent 模块）提供了易用的函数，通过为不同平台选择最优线程数处理数据列表，轻松实现多线程应用（或并发）。了解 `QtConcurrent` 函数及其相关类后，其优势将更加清晰。我们还将通过实际案例学习 Qt Concurrent 模块的强大功能及使用方法。
+
+以下函数（及其变体）可用于通过 `QtConcurrent` 高层 API 实现多线程：
+
+-   **`filter`**：用于过滤列表。需提供待过滤的数据列表及过滤函数。过滤函数将应用于列表中的每个元素（使用最优或自定义线程数），根据返回值决定是否保留元素。
+-   **`filtered`**：与 `filter` 功能相同，但返回新过滤列表而非原地修改输入列表。
+-   **`filteredReduced`**：类似 `filtered`，但会对通过过滤的元素应用第二个归约函数。
+-   **`map`**：将特定函数应用于列表中的所有元素（使用最优或自定义线程数）。需提供列表和映射函数。
+-   **`mapped`**：与 `map` 功能相同，但返回新结果列表而非原地修改输入列表。
+-   **`mappedReduced`**：类似 `mapped`，但会在映射后对每个元素应用第二个归约函数。
+-   **`run`**：用于在独立线程中轻松执行函数。
+
+在 Qt Concurrent 模块中讨论返回值时，实际指的是**异步计算的结果**。因为 Qt Concurrent 会在独立线程中启动所有计算，无论使用 `QtConcurrent` 中的哪个函数，调用都会立即返回，结果需在计算完成后才能获取。这是通过**未来变量**（即 Qt 中的 `QFuture` 类及其相关类）实现的。
+
+`QFuture` 类可用于：
+- 检索由 `QtConcurrent` 函数启动的计算结果
+- 通过暂停、恢复等方法控制计算过程
+- 监控计算进度
+
+为通过 Qt 信号与槽更灵活地控制 `QFuture` 类，可使用 `QFutureWatcher` 类。该类包含信号与槽，便于通过进度条（`QProgressBar` 或 `QProgressDialog`）等部件监控计算状态。
+
+---
+
+让我们通过一个实际应用示例来总结和说明前面提到的所有内容。如果不介绍 QtConcurrent 命名空间的函数，就无法描述 QFuture 及其附属类的使用方法，而这只能通过示例来实现：
+
+1.  首先，让我们使用 Qt Creator 创建一个 Qt Widgets 应用程序项目，并将其命名为 ConcurrentCV。我们将创建一个使用 Qt 并发模块处理多幅图像的程序。为了更专注于程序的多线程部分，处理过程将非常简单。我们将读取每张图片的日期和时间，并将其写入图片的左上角。
+
+
+
+2. 创建项目后，在 ConcurrentCV.pro 文件中添加以下几行，将 OpenCV 框架添加到项目中：
+
+    ```cpp
+    win32: { 
+      include("c:/dev/opencv/opencv.pri") 
+    } 
+    
+    unix: !macx{ 
+     CONFIG += link_pkgconfig 
+      PKGCONFIG += opencv 
+    } 
+    
+    unix: macx{ 
+     INCLUDEPATH += /usr/local/include 
+     LIBS += -L"/usr/local/lib" \ 
+     -lopencv_world 
+    } 
+    ```
+
+    
+
+3.  要在 Qt 项目中使用 Qt 并发模块和 QtConcurrent 命名空间，必须确保在 .pro 文件中指定该模块，添加以下一行：
+
+             QT += concurrent 
+
+4.  现在，我们需要为应用程序中的几个函数编写代码。首先是获取用户所选文件夹中的图片列表（*.jpg 和*.png 文件即可）。要做到这一点，请在 mainwindow.h 私有成员中添加以下一行：
+
+
+
+            QFileInfoList getImagesInFolder(); 
+
+5.  需要说明的是，`QFileInfoList` 必须包含在 `mainwindow.h` 的头文件中。`QFileInfoList` 实际上是包含 `QFileInfo` 元素的 `QList`，可通过 `QDir` 类的 `entryInfoList` 函数获取。因此在 `mainwindow.cpp` 中添加如下实现。注意出于简化目的，我们仅使用文件创建日期，不处理图像 EXIF 数据或相机拍摄原始时间：
+
+
+
+            QFileInfoList MainWindow::getImagesInFolder() 
+            { 
+               QDir dir(QFileDialog::getExistingDirectory(this, 
+               tr("Open Images Folder"))); 
+                 return dir.entryInfoList(QStringList() 
+                 << "*.jpg" 
+                 << "*.png", 
+                 QDir::NoDotAndDotDot | QDir::Files, 
+                 QDir::Name); 
+            }
+
+6.  接下来需要定义 `addDateTime` 函数。我们可以在类外定义此函数，后续将用于 `QtConcurrent::map` 调用。在 `mainwindow.h` 中声明如下：
+
+
+
+            void addDateTime(QFileInfo &info); 
+
+7.  在 `mainwindow.cpp` 中实现该函数
+
+
+
+           void addDateTime(QFileInfo &info) 
+           { 
+             using namespace cv; 
+             Mat image = imread(info.absoluteFilePath().toStdString()); 
+             if(!image.empty()) 
+             { 
+              QString dateTime = info.created().toString(); 
+              putText(image, 
+                dateTime.toStdString(), 
+                Point(30,30) , // 25 pixels offset from the corner 
+                FONT_HERSHEY_PLAIN, 
+                1.0, 
+                Scalar(0,0,255)); // red 
+              imwrite(info.absoluteFilePath().toStdString(), 
+                    image); 
+             } 
+           } 
+
+8.  现在打开 `mainwindow.ui` 文件，在设计模式下创建如下 UI 布局。如图所示：
+    - `loopBtn` 是文本为 "Process in a loop" 的 `QPushButton`
+    - `concurrentBtn` 是文本为 "Process concurrently" 的 `QPushButton`
+    - `progressBar` 进度条部件的初始值设为 0
+
+![](doc/img/5cff07d1-6d24-46c3-8f3f-9c8a6736a521.png)
+
+9.  最后实现两种处理方式的槽函数。为 `loopBtn` 的 `clicked` 信号添加以下代码（单线程循环处理）：
+
+
+
+            void MainWindow::on_loopBtn_pressed() 
+            { 
+              QFileInfoList list = getImagesInFolder(); 
+     
+              QElapsedTimer elapsedTimer; 
+              elapsedTimer.start(); 
+     
+              ui->progressBar->setRange(0, list.count()-1); 
+              for(int i=0; i<list.count(); i++) 
+              { 
+               addDateTime(list[i]); 
+               ui->progressBar->setValue(i); 
+               qApp->processEvents(); 
+              } 
+     
+              qint64 e = elapsedTimer.elapsed(); 
+     
+              QMessageBox::information(this, 
+              tr("Done!"), 
+              QString(tr("Processed %1 images in %2 milliseconds")) 
+                .arg(list.count()) 
+                .arg(e)); 
+            }
+
+这种实现虽然简单但效率低下，后续对比将证明这点。代码通过循环逐个处理文件，调用 `addDateTime` 函数添加时间戳并覆盖图像。
+
+
+
+10. 最后，为 `concurrentBtn` 的 `clicked` 信号添加以下代码（多线程并发处理）：
+
+
+
+            void MainWindow::on_concurrentBtn_pressed() 
+            { 
+              QFileInfoList list = getImagesInFolder(); 
+              QElapsedTimer elapsedTimer; 
+              elapsedTimer.start(); 
+              QFuture<void> future = QtConcurrent::map(list, addDateTime); 
+              QFutureWatcher<void> *watcher =  
+                new QFutureWatcher<void>(this); 
+              connect(watcher, 
+                  SIGNAL(progressRangeChanged(int,int)), 
+                  ui->progressBar, 
+                  SLOT(setRange(int,int))); 
+              connect(watcher, 
+                  SIGNAL(progressValueChanged(int)), 
+                  ui->progressBar, 
+                  SLOT(setValue(int))); 
+              connect(watcher, 
+                  &QFutureWatcher<void>::finished, 
+                  [=]() 
+              { 
+                qint64 e = elapsedTimer.elapsed(); 
+                QMessageBox::information(this, 
+                   tr("Done!"), 
+               QString(tr("Processed %1 images in %2 milliseconds")) 
+                .arg(list.count()) 
+                .arg(e)); 
+              }); 
+              connect(watcher, 
+                SIGNAL(finished()), 
+                watcher, 
+                SLOT(deleteLater())); 
+              watcher->setFuture(future); 
+            }
+
+通过 `QtConcurrent::map` 自动利用多核并行处理，配合 `QFutureWatcher` 实时更新进度条。两种方法的耗时对比将清晰展示多线程处理的性能优势。
+
+
+
+在深入解析上述代码原理前，建议先运行应用程序并使用两个按钮处理测试图像文件夹。性能差异（尤其在多核处理器上）会非常显著，无需精确测量即可感知。在我使用的测试机器（当今中等配置）上处理约50张随机图像时，并发（多线程）版本的处理速度至少快3倍。通过调整 Qt Concurrent 模块的线程数可进一步提升效率，但在此之前，我们先解析代码逻辑。
+
+代码初始部分与单线程版本相同，但此处并未遍历文件列表，而是将列表传递给 `QtConcurrent::map` 函数。该函数自动启动若干线程（使用默认最优线程数，可调整），并对列表中每个元素应用 `addDateTime` 函数。处理顺序虽不确定，但结果一致。计算结果由 `QFuture<void>` 接收，并通过 `QFutureWatcher<void>` 实例监控。如前所述，`QFutureWatcher` 是监控 `QtConcurrent` 计算的便捷方式。注意此处 `QFutureWatcher` 被定义为指针并在处理完成后删除，原因是其必须在整个计算周期内存活。因此，需先建立所有信号连接，再设置其关联的 `future` 变量，确保连接顺序正确。这正是使用 `QtConcurrent` 实现多线程计算并与 GUI 正确交互的全部所需。
+
+`QFuture` 类还提供以下（顾名思义）函数用于控制计算过程：
+- `pause`（暂停）
+- `resume`（恢复）
+- `cancel`（取消）
+
+以及以下状态查询函数：
+- `isStarted`
+- `isPaused`
+- `isRunning`
+- `isFinished`
+- `isCanceled`
+
+通过以下函数可设置 `QtConcurrent` 的最大线程数：
+```cpp
+QThreadPool::globalInstance()->setMaxThreadCount(n)
+```
+
+在示例中尝试调整线程数，观察其对处理时间的影响。您会发现更多线程未必意味着更高性能，最优线程数取决于处理器及其他系统配置。
+
+`QtConcurrent` 的 `filter` 等函数用法类似。例如，定义返回布尔值的过滤函数来筛选早于2025年的图像：
+
+```
+bool filterImage(QFileInfo &info) 
+{ 
+    return info.created().date().year() < 2025;
+}
+```
+
+调用方式：
+
+```
+QtConcurrent::filter(list, filterImage);
+```
+
+若需将过滤结果传递给 `map` 函数，更优方案是使用 `filteredReduced`：
+
+```
+QtConcurrent::filteredReduced(list, filterImage, addDateTime);
+```
+
+`filteredReduced` 返回 `QFuture<T>`（`T` 为输入列表类型），与之前仅用于监控进度的 `QFuture<void>` 不同，此处可获取结果列表。注意，若处理的是文件列表（而非内存中的 `Mat` 或 `QImage` 对象），结果列表将体现元素数量的变化；若处理的是变量，归约函数将直接修改列表元素。
+
+---
+
+**总结**
+
+虽然无法宣称已完全涵盖多线程与并行编程的所有内容，但可以肯定的是，我们已掌握了开发高效多线程计算机视觉应用（或其他类型应用）的核心技能。您已学习如何通过继承 `QThread` 类创建专用线程，或使用 `moveToThread` 函数将复杂计算任务迁移至独立线程。同时，我们还深入探讨了互斥锁、信号量等底层多线程同步原语。
+
+至此，您应已全面理解多线程编程中的潜在问题及其解决方案。若仍需通过实践巩固这些概念——恭喜，您已展现出优秀的学习意识。多线程编程虽复杂艰深，但通过系统训练不同场景下的应用策略，终将获得丰厚回报。例如，可尝试将既往项目（或网络/书籍中的代码）重构为多线程版本。
+
+在第九章《视频分析》中，我们将整合本章及前期知识，深入探讨视频处理领域。您将学习：  
+- 摄像头或文件中运动目标的跟踪技术  
+- 视频动态检测算法  
+- 其他需要处理连续帧的任务（即当前帧计算依赖历史帧数据）  
+
+届时，我们将运用本章所学的线程技术，实现视频分析所需的计算机视觉算法。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
