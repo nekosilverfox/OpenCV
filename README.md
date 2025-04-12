@@ -4643,7 +4643,21 @@ https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/ma
 
     <img src="doc/img/a494560b-65d2-4ffd-9da9-739eae3a1351.png" alt="img" style="zoom:80%;" />
 
-    
+对比与适用场景
+
+|        算子         | 阶数 | 抗噪性 | 边缘精度  |         适用场景         |
+| :-----------------: | :--: | :----: | :-------: | :----------------------: |
+|      **Sobel**      | 一阶 |   中   |   较粗    |    实时视频、工业检测    |
+|     **Scharr**      | 一阶 |   中   |    高     | 医学影像、高精度需求场景 |
+|    **Laplacian**    | 二阶 |   低   |   精细    |    图像锐化、纹理分析    |
+| **SpatialGradient** | 一阶 |   中   | 依赖Sobel | 多方向梯度计算、快速处理 |
+
+**建议**：
+
+- 若需平衡抗噪性与精度，优先选择 Scharr；
+- 若需检测细微纹理变化，配合高斯滤波使用 Laplacian；
+
+---
 
 - `erode` 和 `dilate`：顾名思义，这些函数可用于实现腐蚀和膨胀效果。两个函数都需要一个**结构元素矩阵**，该矩阵可以通过直接调用 `getStructuringElement` 函数构建。您可以选择多次运行（或迭代）函数以得到更加强烈的腐蚀或膨胀效果。以下是这两个函数的使用示例及其结果图像：
 
@@ -4689,6 +4703,199 @@ morphologyEx(inputImage, outputImage,
 https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/filter_plugin
 
 ---
+
+## 几何变换
+
+我们将从一些最重要的几何变换开始，随后学习色彩空间及其相互转换，以及常用的非几何（或杂项）变换。以下是相关函数：
+
+- `resize`：用于调整图像尺寸。使用示例如下：
+
+    ```cpp
+    // 将图像调整为输入尺寸的一半
+    resize(inMat, outMat, 
+            Size(), // 空 Size 对象
+            0.5,    // 宽度缩放因子
+            0.5,    // 高度缩放因子
+            INTER_LANCZOS4); // 设置插值模式为 Lanczos 
+    
+    // 调整至 320x240 尺寸，使用默认插值模式
+    resize(inMat, outMat, Size(320,240));
+    ```
+
+
+
+- `warpAffine`: 该函数可用于执行**仿射变换**。您需要为此函数提供合适的变换矩阵，该矩阵可通过 `getAffineTransform` 函数获取。
+
+    `getAffineTransform` 函数必须接收两个三角形（源三角形和变换后的三角形），即两组三个点。示例：
+
+```cpp
+Point2f triangleA[3];
+Point2f triangleB[3];
+ 
+triangleA[0] = Point2f(0, 0);
+triangleA[1] = Point2f(1, 0);
+triangleA[2] = Point2f(0, 1);
+ 
+triangleB[0] = Point2f(0, 0.5);
+triangleB[1] = Point2f(1, 0.5);
+triangleB[2] = Point2f(0.5, 1);
+ 
+Mat affineMat = getAffineTransform(triangleA, triangleB);
+
+warpAffine(inputImage, outputImage,
+           affineMat,
+           inputImage.size(),  // 输出图像尺寸，与输入一致
+           INTER_CUBIC,        // 插值方法（三次插值）
+           BORDER_WRAP);       // 外推方法（边界环绕模式）
+```
+
+效果图：
+
+![](doc/img/8ae66fb1-24d4-4057-9fec-161d91d27680.png)
+
+
+
+您也可通过 `warpAffine` 实现图像旋转。只需使用 `getRotationMatrix2D` 获取变换矩阵（与上述代码逻辑相同），再将其传入 `warpAffine` 即可。此方法支持任意角度的旋转（不限于 90 度的倍数）。以下示例将源图像绕中心逆时针旋转 -45.0 度，并缩放至原图尺寸的 50%：
+
+```cpp
+Point2f center = Point(inputImage.cols/2, 
+                       inputImage.rows/2);
+
+double angle = -45.0;   // 旋转角度（负值表示顺时针）
+double scale = 0.5;     // 缩放因子（0.5 表示缩小一半）
+Mat rotMat = getRotationMatrix2D(center, angle, scale);
+ 
+warpAffine(inputImage, outputImage,
+           rotMat,
+           inputImage.size(),
+           INTER_LINEAR,    // 线性插值
+           BORDER_CONSTANT); // 边界常量填充
+```
+
+效果图：
+
+![](doc/img/cb8f614d-97fd-43dd-b598-583d3a00faef.png)
+
+
+
+- `warpPerspective`：该函数用于执行透视变换。与 `warpAffine` 类似，此函数也需要通过 `findHomography` 获取变换矩阵。`findHomography` 可用于计算两组点之间的单应性变换矩阵。以下示例代码使用两组角点计算单应性变换矩阵（即 `warpPerspective` 的变换矩阵），并执行透视变换。此示例还设置了外推颜色值为深灰色（可选参数）：
+
+    ```cpp
+    std::vector<Point2f> cornersA(4); 
+    std::vector<Point2f> cornersB(4); 
+    
+    cornersA[0] = Point2f(0, 0); 
+    cornersA[1] = Point2f(inputImage.cols, 0); 
+    cornersA[2] = Point2f(inputImage.cols, inputImage.rows); 
+    cornersA[3] = Point2f(0, inputImage.rows); 
+    
+    cornersB[0] = Point2f(inputImage.cols*0.25, 0); 
+    cornersB[1] = Point2f(inputImage.cols * 0.90, 0); 
+    cornersB[2] = Point2f(inputImage.cols, inputImage.rows); 
+    cornersB[3] = Point2f(0, inputImage.rows * 0.80); 
+    
+    Mat homo = findHomography(cornersA, cornersB); 
+    warpPerspective(inputImage, 
+                  outputImage, 
+                  homo, 
+                  inputImage.size(), 
+                  INTER_LANCZOS4, 
+                  BORDER_CONSTANT, 
+                  Scalar(50,50,50)); 
+    ```
+
+    ![](doc/img/b1a23222-9bfc-422b-b8c0-81d979d6959f.png)
+
+-   `remap`：该函数是功能强大的几何变换函数，可用于实现像素从源图像到输出图像的**重映射**。这意味着您可以将源图像中的像素重新定位到目标图像的其他位置。只要创建正确的映射矩阵并传递给此函数，您就能模拟前述变换及更多其他变换的效果。以下示例展示了 `remap` 函数的强大功能和易用性：
+
+```cpp
+Mat mapX, mapY; 
+mapX.create(inputImage.size(), CV_32FC(1)); 
+mapY.create(inputImage.size(), CV_32FC(1)); 
+for(int i=0; i<inputImage.rows; i++) 
+  for(int j=0; j<inputImage.cols; j++) 
+  { 
+     mapX.at<float>(i,j) = j * 5; 
+     mapY.at<float>(i,j) = i * 5; 
+  } 
+
+remap(inputImage, outputImage,
+      mapX, mapY,
+      INTER_LANCZOS4,
+      BORDER_REPLICATE); 
+```
+
+如代码所示，除输入/输出图像、插值和外推参数外，还需提供 X 和 Y 方向的映射矩阵。上述代码的映射结果如下：图像内容被压缩至原尺寸的五分之一（注意 `remap` 函数中图像尺寸保持不变，但内容被挤压）。效果见下图：
+
+![img](doc/img/a08b244a-9d74-4076-8aa1-9d1f54f18deb.png)
+
+通过修改两个 `for` 循环中的代码并填充不同的 `mapX` 和 `mapY` 矩阵，可实现多种重映射效果。更多示例如下：
+
+垂直翻转图像：
+
+```
+// 垂直翻转
+mapX.at<float>(i,j) = j; 
+mapY.at<float>(i,j) = inputImage.rows - i; 
+```
+
+水平翻转图像:
+
+```
+// 水平翻转
+mapX.at<float>(i,j) = inputImage.cols - j; 
+mapY.at<float>(i,j) = i;
+```
+
+通常建议将 OpenCV 图像坐标系转换为标准笛卡尔坐标系，处理完坐标后再转换回 OpenCV 坐标系。原因有二：
+
+1. 笛卡尔坐标系是学校几何课程的标准体系，便于理解
+2. 笛卡尔坐标系支持负坐标，为变换操作提供更大的灵活性
+
+```cpp
+Mat mapX, mapY; 
+mapX.create(inputImage.size(), CV_32FC(1)); 
+mapY.create(inputImage.size(), CV_32FC(1)); 
+
+// Calculate the center point 
+Point2f center(inputImage.cols/2, 
+               inputImage.rows/2); 
+
+for(int i=0; i<inputImage.rows; i++) 
+{
+    for(int j=0; j<inputImage.cols; j++) 
+  { 
+    // get i,j in standard coordinates, thus x,y 
+    double x = j - center.x; 
+    double y = i - center.y; 
+
+    // Perform a mapping for X and Y 
+    x = x*x/500; 
+    y = y; 
+
+    // convert back to image coordinates 
+    mapX.at<float>(i,j) = x + center.x; 
+    mapY.at<float>(i,j) = y + center.y; 
+  } 
+}
+
+  remap(inputImage, 
+       outputImage, 
+       mapX, 
+       mapY, 
+       INTER_LANCZOS4, 
+       BORDER_CONSTANT); 
+```
+
+下面是前面代码示例中映射操作的结果：
+
+![](doc/img/3714125d-4f22-4365-b919-459eedc9bcd0.png)
+
+重映射函数的另一个非常重要的用途是纠正图像中的镜头畸变。您可以使用 `initUndistortRectifyMap` 和 `initWideAngleProjMap` 函数获取畸变校正所需的 X 和 Y 方向映射，然后将它们传递给重映射函数。
+
+您可以使用以下链接获取 transform_plugin 的源代码副本，它与 Computer_Vision 项目兼容，并包含您在本节中学到的变换函数。您可以使用该插件测试并制作本节中的大部分图像。请尝试扩展该插件以控制更多参数，或尝试不同的映射操作，并亲自尝试制作不同的图像。下面是 transform_plugin 源代码的链接：
+
+https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/transform_pluginhttps://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/transform_plugin
 
 
 
