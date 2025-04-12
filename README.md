@@ -4897,9 +4897,47 @@ for(int i=0; i<inputImage.rows; i++)
 
 https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/transform_pluginhttps://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/transform_plugin
 
+## 其他变换
+
+**其他变换**涉及无法归类为几何变换的各类任务，例如色彩空间（及格式）转换、应用色彩映射、傅里叶变换等。让我们逐一了解。
 
 
 
+## 颜色与色彩空间
+
+简而言之，==**色彩空间**是用于表示图像像素颜色值的模型==。严格来说，计算机视觉中的颜色由一个或多个数值组成（每个对应一个通道，即 OpenCV =`Mat` 类的维度）。色彩空间定义了如何将这些数值转换为实际颜色。例如：
+- **RGB 色彩空间**：通过红、绿、蓝三色组合表示颜色，广泛用于显示器、电视等设备。
+- **CMYK 色彩空间**：由青（Cyan）、品红（Magenta）、黄（Yellow）、黑（Key）四通道组成，主要用于彩色印刷。
+
+OpenCV 中默认使用 **BGR 色彩空间**（与 RGB 顺序相反），大多数处理彩色图像的函数默认采用此格式。在计算机视觉中，常需在不同色彩空间间转换，因为某些图像特性在特定色彩空间中更易识别。此外，虽然 Qt 部件能直接显示 BGR 图像，但其他色彩空间需转换后才能正确显示。
+
+
+
+OpenCV 提供 `cvtColor` 函数实现色彩空间转换。该函数接受输入/输出图像及 `cv::ColorConversionCodes` 枚举中的转换代码。示例如下：
+
+```cpp
+// 将 BGR 转换为 HSV 色彩空间
+cvtColor(inputImage, outputImage, CV_BGR2HSV);
+
+// 将灰度图转换为 RGBA 色彩空间
+cvtColor(inputImage, outputImage, CV_GRAY2RGBA);
+```
+
+
+
+OpenCV 还提供 `applyColorMap` 函数（功能与 `remap` 不同但形式相似），用于将输入图像颜色映射到其他色彩。需提供输入图像、输出图像及 `cv::ColormapTypes` 枚举中的映射类型。示例：
+
+```cpp
+applyColorMap(inputImage, outputImage, COLORMAP_JET);
+```
+
+上述代码的输出效果如下：
+
+![img](doc/img/e0fadc02-d2c1-40df-b22c-c7fb6204a3ea.png)
+
+您可通过以下链接获取与 `Computer_Vision` 项目兼容的 `color_plugin` 源代码。该插件包含本节介绍的颜色映射功能，并配有直观的用户界面。通过此源码，可自行尝试不同色彩映射操作及图像实验：
+
+https://github.com/PacktPublishing/Computer-Vision-with-OpenCV-3-and-Qt5/tree/master/ch06/color_plugin
 
 
 
