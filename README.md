@@ -5374,7 +5374,7 @@ fs.release();
 
 
 
-# 2D 特征框架
+## 2D 特征框架
 
 如前所述，OpenCV 提供了多种特征检测和描述符提取算法的实现类，这些算法由全球计算机视觉研究者开发。与 OpenCV 中其他复杂算法类似，特征检测器和描述符提取器通过继承 `cv::Algorithm` 类实现。该子类名为 `Feature2D`，包含所有特征检测和描述符提取类共有的函数。任何用于检测特征和提取描述符的类都应是 `Feature2D` 的子类。OpenCV 为此定义了两个类类型：
 
@@ -5436,7 +5436,7 @@ class Feature2D : public virtual Algorithm
 
 这种将特征检测器和描述符提取器归类到单一类的方式看似奇特，实则有其合理性：部分算法（非全部）同时提供特征检测和描述符提取功能。随着后续具体算法的讲解，这一点将更加清晰。接下来我们将介绍 OpenCV 2D 特征框架中的现有 `Feature2D` 类和算法。
 
-# 特征检测
+## AGAST 特征检测
 
 OpenCV 提供了多个类用于从图像中检测特征（关键点）。每个类根据其实现的特定算法有不同的参数配置要求，但所有类都通过继承 `Feature2D` 获得了共有的 `detect` 函数。在 OpenCV 中，关键点（特征）由 `KeyPoint` 类实例表示，包含以下核心属性：
 
@@ -5574,7 +5574,7 @@ Elmar Mair, Gregory D. Hager, Darius Burschka, Michael Suppa, and Gerhard Hirzin
 
 让我们继续介绍其他特征检测算法。
 
-# KAZE 与 AKAZE
+## KAZE 与 AKAZE
 
 `KAZE` 和 `AKAZE`（**加速 KAZE**）类可用于通过 KAZE 算法（及其加速版本）检测特征。关于 KAZE 与 AKAZE 算法细节，请参阅后附参考文献。与 AGAST 类似，我们可使用默认参数直接调用 `detect` 函数，或通过 Qt 控件获取参数以精细调节算法行为。示例如下：
 
@@ -5601,14 +5601,45 @@ Elmar Mair, Gregory D. Hager, Darius Burschka, Michael Suppa, and Gerhard Hirzin
 
 以下示例代码根据界面中 "Accelerated" 复选框状态选择 KAZE（未勾选）或 AKAZE（勾选）：
 
-XXXX_CODE_XXXX
+```cpp
+vector<KeyPoint> keypoints; 
+if(ui->kazeAcceleratedCheck->isChecked()) 
+{ 
+  Ptr<AKAZE> akaze = AKAZE::create(); 
+  akaze->setDescriptorChannels(3); 
+  akaze->setDescriptorSize(0); 
+  akaze->setDescriptorType( 
+    ui->akazeDescriptCombo->currentIndex() + 2); 
+  akaze->setDiffusivity(ui->kazeDiffCombo->currentIndex()); 
+  akaze->setNOctaves(ui->kazeOctaveSpin->value()); 
+  akaze->setNOctaveLayers(ui->kazeLayerSpin->value()); 
+  akaze->setThreshold(ui->kazeThreshSpin->value()); 
+  akaze->detect(inputImage, keypoints); 
+} 
+else 
+{ 
+  Ptr<KAZE> kaze = KAZE::create(); 
+  kaze->setUpright(ui->kazeUprightCheck->isChecked()); 
+  kaze->setExtended(ui->kazeExtendCheck->isChecked()); 
+  kaze->setDiffusivity(ui->kazeDiffCombo->currentIndex()); 
+  kaze->setNOctaves(ui->kazeOctaveSpin->value()); 
+  kaze->setNOctaveLayers(ui->kazeLayerSpin->value()); 
+  kaze->setThreshold(ui->kazeThreshSpin->value()); 
+  kaze->detect(inputImage, keypoints); 
+} 
+drawKeypoints(inputImage, keypoints, outputImage); 
+```
+
+
 
 **参考文献**：
 
 1. *KAZE Features*. Pablo F. Alcantarilla, Adrien Bartoli and Andrew J. Davison. 发表于欧洲计算机视觉会议（ECCV），意大利佛罗伦萨，2012 年 10 月
 2. *Fast Explicit Diffusion for Accelerated Features in Nonlinear Scale Spaces*. Pablo F. Alcantarilla, Jesús Nuevo and Adrien Bartoli. 发表于英国机器视觉会议（BMVC），英国布里斯托，2013 年 9 月
 
-# BRISK 类
+
+
+## BRISK 类
 
 `BRISK` 类可用于通过 **BRISK**（二进制鲁棒可扩展不变关键点）算法检测图像特征。关于算法原理及 OpenCV 底层实现细节，请参考后附论文。其用法与 `AGAST` 和 `KAZE` 类似：通过 `create` 函数创建类实例，设置参数（若需覆盖默认值），最后调用 `detect` 函数。示例如下：
 
@@ -5619,12 +5650,23 @@ XXXX_CODE_XXXX
 - `octaves`（八度数，类似 `KAZE` 和 `AKAZE` 类的参数）
 - `patternScale`（模式缩放参数，默认设为 1）：
 
-XXXX_CODE_XXXX
+```cpp
+vector<KeyPoint> keypoints; 
+Ptr<BRISK> brisk = 
+    BRISK::create(ui->briskThreshSpin->value(), 
+                  ui->briskOctaveSpin->value(), 
+                  ui->briskScaleSpin->value()); 
+drawKeypoints(inputImage, keypoints, outputImage); 
+```
+
+
 
 **参考文献**：  
 Stefan Leutenegger, Margarita Chli, and Roland Yves Siegwart. Brisk: Binary robust invariant scalable keypoints. 发表于 IEEE 国际计算机视觉会议（ICCV），2011 年，2548-2555 页。IEEE, 2011.
 
-# FAST
+
+
+## FAST
 
 `FastFeatureDetector` 类可用于通过 **FAST**（加速段测试特征）方法检测图像特征。FAST 与 AGAST 算法具有高度相似性（两者均采用加速段测试技术），这在 OpenCV 的实现方式和类用法中可见一斑。建议查阅后附论文了解算法细节，以下重点展示其用法示例：
 
@@ -5641,7 +5683,7 @@ Edward Rosten and Tom Drummond. Machine learning for high-speed corner detection
 
 
 
-# GFTT（优质跟踪特征）
+## GFTT（优质跟踪特征）
 
 `GFTTDetector` 类可用于通过 **Harris**（以发明者命名）和 **GFTT** 角点检测算法检测特征。该类实质上是将两种特征检测方法合并到一个类中（因 GFTT 是 Harris 算法的改进版本），具体使用哪种算法由输入参数决定。以下通过示例说明其用法并简要解析参数：
 
@@ -5649,7 +5691,20 @@ Edward Rosten and Tom Drummond. Machine learning for high-speed corner detection
 
 相关用户界面的源码实现如下：
 
-XXXX_CODE_XXXX
+```cpp
+vector<KeyPoint> keypoints; 
+Ptr<GFTTDetector> gftt = GFTTDetector::create(); 
+gftt->setHarrisDetector(ui->harrisCheck->isChecked()); 
+gftt->setK(ui->harrisKSpin->value()); 
+gftt->setBlockSize(ui->gfttBlockSpin->value()); 
+gftt->setMaxFeatures(ui->gfttMaxSpin->value()); 
+gftt->setMinDistance(ui->gfttDistSpin->value()); 
+gftt->setQualityLevel(ui->gfttQualitySpin->value()); 
+gftt->detect(inputImage, keypoints); 
+drawKeypoints(inputImage, keypoints, outputImage); 
+```
+
+
 
 **`GFTTDetector` 类参数说明**：
 
@@ -5665,7 +5720,9 @@ XXXX_CODE_XXXX
 1.  Jianbo Shi 和 Carlo Tomasi. *Good features to track*. 发表于 IEEE 计算机视觉与模式识别会议（CVPR'94），1994 年，593-600 页。IEEE, 1994.
 2.  C. Harris 和 M. Stephens (1988). *A combined corner and edge detector*. 第四届 Alvey 视觉会议论文集，147-151 页。
 
-# ORB
+
+
+## ORB
 
 最后介绍 **ORB** 算法（本节涵盖的最后一个特征检测算法）。
 
@@ -5675,7 +5732,26 @@ XXXX_CODE_XXXX
 
 以下是对应用户界面的源码实现。控件 `objectName` 属性与参数对应关系直观，具体代码如下：
 
-XXXX_CODE_XXXX
+```cpp
+vector<KeyPoint> keypoints; 
+Ptr<ORB> orb = ORB::create(); 
+orb->setMaxFeatures(ui->orbFeaturesSpin->value()); 
+orb->setScaleFactor(ui->orbScaleSpin->value()); 
+orb->setNLevels(ui->orbLevelsSpin->value()); 
+orb->setPatchSize(ui->orbPatchSpin->value()); 
+orb->setEdgeThreshold(ui->orbPatchSpin->value()); // = patch size 
+orb->setWTA_K(ui->orbWtaSpin->value()); 
+orb->setScoreType(ui->orbFastCheck->isChecked() ? 
+                  ORB::HARRIS_SCORE 
+                : 
+                  ORB::FAST_SCORE); 
+orb->setPatchSize(ui->orbPatchSpin->value()); 
+orb->setFastThreshold(ui->orbFastSpin->value()); 
+orb->detect(inputImage, keypoints); 
+drawKeypoints(inputImage, keypoints, outputImage); 
+```
+
+
 
 参数设置流程与前述算法一致，以下为详细参数解析：
 
@@ -5697,11 +5773,292 @@ XXXX_CODE_XXXX
 
 至此，我们已掌握 OpenCV 3 中多种关键点检测算法的使用方法。需注意，除非从关键点提取描述符，否则这些关键点（特征）难以实际应用。下一节将学习关键点描述符提取技术，进而掌握 OpenCV 的描述符匹配能力，结合本章所学类实现物体识别、检测、跟踪与分类。建议深入阅读各算法论文以理解技术细节（尤其当您计划开发自定义关键点检测器时），但若仅需使用现有算法，明确其用途即可满足需求。
 
+
+
+## 提取与匹配描述符
+
+在计算机视觉中，**描述符**（descriptor）是描述关键点的一种方式，其结构完全依赖于提取算法。与关键点（由 `KeyPoint` 类定义）不同，描述符没有统一结构，仅表示关键点的特征。OpenCV 中描述符存储在 `Mat` 类中，每行对应一个关键点的描述符。如前一节所述，可通过 `FeatureDetector` 子类的 `detect` 函数检测图像关键点，而 `DescriptorExtractor` 子类的 `compute` 函数则用于从关键点提取描述符。
+
+由于 OpenCV 中特征检测器与描述符提取器均继承自 `Feature2D`（本章前文已述），二者可轻松结合使用。本节将使用相同类（支持描述符提取的 `Feature2D` 子类）从关键点提取描述符，并通过场景图像定位目标物体。需注意：并非所有关键点与描述符兼容，也非所有算法（即 `Feature2D` 子类）同时提供 `detect` 和 `compute` 函数。支持两者的算法还提供更高效的 `detectAndCompute` 函数，可一次性完成关键点检测与特征提取。以下通过示例详解特征匹配的全流程步骤：
+
+1. **使用 AKAZE 算法检测关键点**  
+
+   对以下两幅图像使用 `AKAZE` 类提取关键点
+
+   ![](doc/img/94bace3a-2c40-47a4-821a-559b8b8ec8cf.png)  
+   ```cpp
+   using namespace cv; 
+   using namespace std; 
+   Mat image1 = imread("image1.jpg"); 
+   Mat image2 = imread("image2.jpg"); 
+   Ptr<AKAZE> akaze = AKAZE::create(); 
+   // set AKAZE params ... 
+   vector<KeyPoint> keypoints1, keypoints2; 
+   akaze->detect(image1, keypoints1); 
+   akaze->detect(image2, keypoints2); 
+   ```
+
+   
+
+2. **提取描述符**  
+   使用同一 `AKAZE` 实例从关键点提取描述符：  
+
+   ```cpp  
+   Mat descriptor1, descriptor2; 
+   akaze->compute(image1, keypoints1, descriptor1); 
+   akaze->compute(image2, keypoints2, descriptor2); 
+   ```
+
+
+
+3. **创建描述符匹配器**  
+   在获得两幅图像的描述符后，需使用 `DescriptorMatcher` 类进行匹配。匹配器类型必须与描述符类型兼容。以本例使用的 `AKAZE` 算法（生成浮点型描述符）为例，应选择 `FLANNBASED` 类型匹配器：
+   
+   ```cpp
+   descMather = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED); 
+   ```
+   
+   **DescriptorMatcher 匹配器类型选项**（根据描述符类型选择）：
+   
+   - `FLANNBASED` - 适用于浮点型描述符（如 AKAZE、KAZE）
+   
+   - `BRUTEFORCE` - 暴力匹配（通用型）
+   
+   - `BRUTEFORCE_L1` - L1 范数暴力匹配
+   
+   - `BRUTEFORCE_HAMMING` - 汉明距离匹配（适用于二进制描述符如 ORB）
+   
+   - `BRUTEFORCE_HAMMINGLUT` - 预查表优化的汉明距离匹配
+   
+   - `BRUTEFORCE_SL2` - 平方 L2 范数暴力匹配
+   
+   若不确定描述符类型，可逐一尝试不同匹配器。
+
+4. **执行匹配操作**  
+   调用 `match` 函数进行匹配，结果存入 `DMatch` 向量：
+   
+   ```cpp
+   vector<DMatch> matches; 
+   descMather->match(descriptor1, descriptor2, matches); 
+   ```
+   
+   **`DMatch` 类成员解析**：
+   
+   - `queryIdx`：查询图像（第一幅图）描述符索引
+   
+   - `trainIdx`：训练图像（第二幅图）描述符索引
+   
+   - `imgIdx`：训练图像索引（多图匹配时有效）
+   
+   - `distance`：描述符间相似度距离（值越小匹配度越高）
+   
+
+5. **可视化匹配结果**  
+   使用 `drawMatches` 函数自动生成可视化结果：
+   
+   **基础可视化**（显示所有匹配，随机颜色）：
+   
+   ```cpp
+   drawMatches(image1, 
+               keypoints1, 
+               image2, 
+               keypoints2, 
+               matches, 
+               dispImg); 
+   ```
+   
+   
+   ![](doc/img/69c03cae-b40e-4dad-b63e-365dccbf1633.png)
+   
+   **进阶可视化**（自定义颜色，过滤未匹配点）：
+   
+   ```cpp
+   drawMatches(image1, keypoints1, 
+               image2, keypoints2, 
+               matches, 
+               dispImg, 
+               Scalar(0, 255, 0), // green for matched 
+               Scalar::all(-1), // unmatched color (default) 
+               vector<char>(), // empty mask 
+               DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS); 
+   ```
+   
+   
+   
+   ![](doc/img/5a2b54f1-de45-433b-98e7-c4261bfef4bb.png)
+
+*注*：示例中出现的部分错误匹配属于正常现象，可通过以下方式优化：
+- 调整特征检测算法参数（如 `KAZE` 的阈值）
+- 尝试不同特征描述算法（如改用 `AKAZE` 或 `ORB`）
+- 增加匹配筛选条件（如距离阈值过滤）
+
+
+
+6.  解释匹配结果完全取决于具体应用场景。例如，如果我们在匹配两张尺寸相同且内容类型相同的图像（如人脸、同类物体、指纹等），可能需要考虑匹配关键点中距离值超过某个阈值的数量。或者，如当前示例，我们可能希望通过匹配来检测场景中的物体。常用的方法是尝试找到匹配关键点之间的单应性变换。为此，我们需要执行以下三个操作：
+    - 首先，需要过滤匹配结果以去除弱匹配，即仅保留"好匹配"。这完全取决于场景和物体特性，但通常通过反复试验可以找到最佳阈值
+    - 其次，需要使用`findHomography`函数获取优质关键点之间的单应性变换
+    - 最后，需要使用`perspectiveTransform`将物体边界框（矩形）投影到场景中
+
+您已在[第6章](#e4effd35-71cb-4b71-a945-62bce820a80e.xhtml) *OpenCV图像处理* 中学习过`findHomography`和`perspectiveTransform`及其使用方法。
+
+以下是如何过滤无效匹配结果以获取有效匹配的方法。注意匹配阈值0.1是通过反复试验确定的。另一种常见方法是找出匹配集合中的最小和最大距离，然后仅接受距离小于与最小距离相关某个值的匹配，尽管我们在此并未采用这种方式：
+
+```cpp
+vector<DMatch> goodMatches; 
+double matchThresh = 0.1; 
+for(int i=0; i<descriptor1.rows; i++) 
+{ 
+  if(matches[i].distance < matchThresh) 
+      goodMatches.push_back(matches[i]); 
+} 
+```
+
+
+
+在需要精细调整阈值时，可以利用Qt框架和用户界面的强大功能。例如，可以使用Qt滑块控件快速轻松调整并找到所需阈值。只需确保将`matchThresh`替换为您的滑块控件值即可。
+
+现在，我们可以使用有效匹配来寻找单应性变换。为此，需要根据有效匹配筛选关键点，然后将这些筛选后的关键点（仅坐标点）输入`findHomography`函数以获取所需的变换矩阵。实现如下：
+
+```cpp
+vector<Point2f> goodP1, goodP2; 
+for(int i=0; i<goodMatches.size(); i++) 
+{ 
+  goodP1.push_back(keypoints1[goodMatches[i].queryIdx].pt); 
+  goodP2.push_back(keypoints2[goodMatches[i].trainIdx].pt); 
+} 
+Mat homoChange = findHomography(goodP1, goodP2); 
+```
+
+
+
+最后，可以使用刚获得的单应性变换矩阵对匹配点进行透视变换。具体步骤为：首先构造对应于第一幅图像四个角点的四个点，应用变换，最后绘制连接四个结果点的四条线段。实现方式如下：
+
+```cpp
+vector<Point2f> corners1(4), corners2(4); 
+corners1[0] = Point2f(0,0); 
+corners1[1] = Point2f(image1.cols-1, 0); 
+corners1[2] = Point2f(image1.cols-1, image1.rows-1); 
+corners1[3] = Point2f(0, image1.rows-1); 
+
+perspectiveTransform(corners1, corners2, homoChange); 
+
+image2.copyTo(dispImage); 
+
+line(dispImage, corners2[0], corners2[1], Scalar::all(255), 2); 
+line(dispImage, corners2[1], corners2[2], Scalar::all(255), 2); 
+line(dispImage, corners2[2], corners2[3], Scalar::all(255), 2); 
+line(dispImage, corners2[3], corners2[0], Scalar::all(255), 2); 
+```
+
+
+
+以下是操作结果：
+
+![](doc/img/2398008a-fff7-4117-bde0-63ca177c5979.png)
+
+由于物体实际上是从同一图像中截取的，这并不能真正检验该方法的强大性。以下是在第二幅图像存在旋转、透视变化甚至噪声（使用智能手机拍摄屏幕的图像）的情况下，应用相同流程的结果。尽管第一幅图像的部分区域超出视野范围，但匹配结果仍然基本正确：
+
+![](doc/img/d6fb7e05-9ac9-45c5-ba53-3cec8b9ba1e3.png)
+
+作为参考，此匹配检测使用AKAZE算法完成，描述符类型为 `DESCRIPTOR_KAZE`，阈值为0.0001，4个八度，4个八度层，`DIFF_PM_G1` 扩散参数。请尝试在不同光照条件和图像中使用不同参数进行实践。
+
+我们还可以将 `drawMatches` 结果与检测结果相结合，即在匹配结果图像上直接绘制检测边界框。这在调整参数或信息展示时特别有用。实现时需确保先调用 `drawMatches` 函数创建输出图像（示例中的 `dispImg` 变量），然后为所有点添加偏移量——因为 `drawMatches` 会在左侧显示第一幅图像，该偏移量可将检测框向右移动，即给每个点的X坐标加上第一幅图像的宽度。实现方式如下：
+
+```cpp
+Point2f offset(image1.cols, 0); 
+
+line(dispImage, corners2[0] + offset, 
+  corners2[1] + offset, Scalar::all(255), 2); 
+line(dispImage, corners2[1] + offset, 
+  corners2[2] + offset, Scalar::all(255), 2); 
+line(dispImage, corners2[2] + offset, 
+  corners2[3] + offset, Scalar::all(255), 2); 
+line(dispImage, corners2[3] + offset, 
+  corners2[0] + offset, Scalar::all(255), 2); 
+```
+
+
+
+最终图像如下：
+
+![](doc/img/11c4e88a-2d52-4921-abe6-ae7294e53d73.png)
+
+从前述示例可见，即使图像存在尺度、方向等多种形变，只要输入参数正确，算法仍能良好运行。理论上我们总期望找到能应对所有情况的通用算法，但实践中这种情况极少出现。下一节将学习如何为具体应用选择最佳算法。
+
+
+
+## 如何选择算法
+
+如前所述，没有一种算法可以轻松应对所有开箱即用的情况，主要原因在于与软硬件相关的因素多种多样。某个算法可能精度极高，但同时需要大量资源（如内存或CPU使用率）。
+
+另一个算法可能需要更少的参数（这几乎总是一件好事），但可能无法发挥其最高性能。我们甚至无法列举所有影响选择最佳Feature2D（或特征检测器和描述符提取器）算法/最佳匹配算法的因素，但仍可考虑一些主要且广为人知的因素——这些因素也是OpenCV及大多数计算机视觉算法在结构设计上遵循的原因。这些因素包括：
+
+- 精度
+- 速度
+- 资源使用（内存、磁盘空间等）
+- 可用性
+
+请注意，"性能"通常指精度、速度和资源使用的综合表现。因此，我们本质上是在寻找能满足需求精度的可用算法，且该算法需支持应用程序运行的平台（或多个平台）。需要特别指出的是，作为工程师，您也可以通过将用例精确限定在实际需求范围内来影响这些参数。让我们通过刚才提到的因素来具体说明。
+
+### 精度
+
+首先，精度可能具有误导性——当我们发现精度下降时，通常会倾向于放弃某个算法，但正确做法是首先明确用例的精度要求。查看知名公司基于计算机视觉设备的规格说明时，您会立即注意到诸如"超过95%"等表述。这并不意味着设备不完美，恰恰相反——这说明设备的精度已被明确定义，用户可以预期特定水平的精度，同时也能接受一定程度的低误差。尽管如此，追求100%的精度始终是值得推荐的目标。
+
+要为您的用例选择精确算法，最佳方法是查阅该算法的论文和参考资料，更理想的是亲自进行测试。务必使用Qt的适当控件创建用户界面，以便轻松试验现有（或您自己的）算法。创建基准测试，确保完全了解特定算法在阈值或其他参数变化时的行为。
+
+此外，请根据尺度独立性和旋转独立性需求选择算法。例如：使用标准AKAZE描述符类型（非直立模式）时，AKAZE算法支持旋转独立性，因此匹配甚至可以处理旋转后的对象；或者使用更高八度（或金字塔层级）数量，这有助于匹配不同尺寸的图像，从而实现尺度独立性。
+
+### 速度
+
+算法的执行速度尤为重要，特别是当您开发需要尽可能高**FPS**（每秒帧数）的实时应用时。与精度类似，您需要明确速度需求。例如：若匹配两张图像并向用户展示结果，即使延迟半秒（500ms）仍可接受；但在高FPS场景下，每帧半秒的延迟就完全不可行。
+
+OpenCV提供了`TickMeter`类或`getTickFrequency`和`getTickCount`函数来测量计算机视觉流程（或其他任何流程）的执行时间。首先看旧方法：
+
+```cpp
+double freq = cv::getTickFrequency(); 
+double tick = cv::getTickCount(); 
+processImage(); // 任意处理流程
+double dur = (cv::getTickCount() - tick) / freq; 
+```
+
+`getTickFrequency`函数返回CPU每秒时钟周期数（频率），`getTickCount`返回自启动以来的时钟周期数。因此上述代码可计算`processImage`函数的秒级耗时。
+
+`TickMeter`类提供了更灵活且易用的接口：
+
+```cpp
+cv::TickMeter meter; 
+meter.start(); 
+processImage(); // 任意处理流程
+meter.stop(); 
+meter.getTimeMicro();   // 获取微秒级耗时
+meter.getTimeMilli();   // 毫秒级耗时
+meter.getTimeSec();     // 秒级耗时
+meter.getTimeTicks();   // 原始时钟周期数
+```
+
+避免依赖经验法则（如"ORB更快"或"BRISK更准"）。虽然字符串类型描述符（如ORB）通常因使用汉明距离而匹配更快，但AKAZE等新算法可通过GPU和OpenCV UMat加速（详见第4章 *Mat与QImage*了解UMat类）。请以实测数据或可信参考资料为准。
+
+Qt的`QElapsedTimer`类可与OpenCV的`TickMeter`类类似使用，用于测量任意流程的执行时间。
+
+
+
+### 资源使用
+
+对于较新且高端的设备/计算机而言，资源使用通常不是大问题，但对于磁盘和内存空间有限的计算机（如嵌入式设备）仍可能成为瓶颈。建议使用操作系统预装的资源监控应用程序进行监测：
+
+- **Windows**：任务管理器（Task Manager）可查看内存等资源占用  
+- **macOS**：活动监视器（Activity Monitor）可查看程序能耗（电池电量）、内存及其他资源使用详情  
+- **Linux**：系统监视器（System Monitor）等工具可实现同等监测功能
+
+
+
 ---
 
->  Availability
 
-## 可用性
+
+### 可用性
+
+> Availability
 
 尽管 OpenCV 和 Qt 都是跨平台框架，但某些算法（甚至类或函数）仍可能依赖平台特定的能力，尤其是出于性能考虑。需要特别注意并明确的是，您必须确保所使用的算法在目标发布平台上可用。最佳的信息来源通常是 OpenCV 和 Qt 框架中底层类的文档页面。
 
