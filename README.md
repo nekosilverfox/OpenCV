@@ -5242,9 +5242,368 @@ rectangle(img,
 
 在[第七章](#6368d046-dd29-4b28-985a-409fe6141144.xhtml)（*特征与描述符*）中，我们将深入探索计算机视觉和 OpenCV 框架，学习关键点和特征描述符及其在目标检测和匹配中的应用。您还将了解直方图等核心概念——包括直方图的定义、提取方法和通用应用场景。该章节将作为本章的延伸，结合本章所学技能与新的图像特征/关键点相关技术，实现更复杂的图像匹配、比较和检测任务。
 
+
+
 ---
 
+# 特征与描述符
 
+在[第6章](#e4effd35-71cb-4b71-a945-62bce820a80e.xhtml)（*OpenCV中的图像处理*）中，我们主要从图像内容和像素层面学习了图像处理技术。我们掌握了如何过滤像素、变换图像以及以各种方式操作像素值。即使是模板匹配，我们也仅通过原始像素内容来获取结果并判断物体是否存在。然而，我们尚未学习如何基于图像的特征（而非原始像素）来区分不同类型的物体，或理解图像的整体语义。对人类而言，识别不同类型的人脸、汽车、文字及几乎任何可见物体（除非极其相似）几乎是本能的任务。大脑能自动捕捉面部的独特细节，并在再次见到时通过这些特征识别人脸。例如，不同汽车品牌的标志会深深印刻在记忆中，帮助我们轻松区分车型（或制造商）。简而言之，人类通过视觉系统不断寻找物体中的可区分特征，并利用这些特征进行识别。当然，人脑也会存在误判或遗忘的可能性。
+
+上述原理正是许多计算机视觉算法的基础。本章将学习OpenCV框架中用于检测图像中可区分片段（称为**特征**或关键点）的核心类和方法，继而了解如何从特征中提取**描述符**（即特征的数字化描述）。这些描述符可应用于图像比较、单应性变化检测、已知物体定位等多种场景。值得注意的是，对特征和描述符的操作（如存储、处理）通常比直接处理图像更高效，因为它们本质上是描述图像特征的数值集合（具体形式取决于算法）。
+
+从之前章节的学习可知，OpenCV和Qt框架是功能强大的工具集合，包含丰富的类、函数等资源。虽然无法在一本书中涵盖所有内容，但由于框架本身的高度结构化设计，只要理解其类层次结构，即使遇到新类或函数也能快速掌握用法。本章将首先梳理OpenCV特征检测与描述符提取的类层次结构，再深入实践应用细节。
+
+本章将涵盖以下主题：
+
+-   OpenCV中的算法体系
+-   如何使用现有OpenCV算法
+-   通过`FeatureDetector`类检测特征（关键点）
+-   使用`DescriptorExtractor`类提取描述符
+-   如何匹配描述符并用于检测
+-   绘制描述符匹配结果
+-   如何根据用例选择算法
+
+## 所有算法的基础——Algorithm 类
+
+OpenCV 中的所有算法（至少非简单算法）都作为 `cv::Algorithm` 类的子类实现。与常规预期不同，该类并非抽象类（可直接实例化，但无实际功能）。尽管未来可能调整，但这不影响我们访问和使用它的方式。在 OpenCV 中，推荐的做法是：先创建继承 `cv::Algorithm` 的子类（包含特定目标所需的所有成员函数），再通过子类化实现同一算法的不同版本。为深入理解，我们先详细解析 `cv::Algorithm` 类的结构。以下是 OpenCV 源码中该类的简化示意：
+
+```cpp
+class Algorithm 
+{ 
+  public: 
+  Algorithm(); 
+  virtual ~Algorithm(); 
+  virtual void clear(); 
+  virtual void write(FileStorage& fs) const; 
+  virtual void read(const FileNode& fn); 
+  virtual bool empty() const; 
+  template<typename _Tp> 
+    static Ptr<_Tp> read(const FileNode& fn); 
+  template<typename _Tp> 
+    static Ptr<_Tp> load(const String& filename, 
+        const String& objname=String()); 
+  template<typename _Tp> 
+    static Ptr<_Tp> loadFromString(const String& strModel, 
+        const String& objname=String()); 
+  virtual void save(const String& filename) const; 
+  virtual String getDefaultName() const; 
+  protected: 
+  void writeFormat(FileStorage& fs) const; 
+}; 
+```
+
+首先了解 `cv::Algorithm` 类中使用的 `FileStorage` 和 `FileNode` 类（这两个类也广泛用于其他 OpenCV 类），然后解析 `cv::Algorithm` 的方法：
+
+-   **`FileStorage` 类**：用于便捷读写 XML/YAML/JSON 文件。该类在 OpenCV 中广泛存储算法生成或所需的各种信息，其工作方式类似常规文件读写类，但专门处理结构化数据格式。
+-   **`FileNode` 类**：继承自 `Node` 类，表示 `FileStorage` 中的单个元素。可以是叶子节点，也可以是其他 `FileNode` 的容器。
+
+
+
+除上述类外，OpenCV 还提供 **`FileNodeIterator` 类**（用于 STL 风格的节点遍历）。以下示例展示这些类的实际用法：
+
+```cpp
+using namespace cv; 
+String str = "a random note"; 
+double d = 999.001; 
+Matx33d mat = {1,2,3,4,5,6,7,8,9}; 
+
+FileStorage fs; 
+fs.open("c:/dev/test.json", 
+    FileStorage::WRITE | FileStorage::FORMAT_JSON); 
+fs.write("matvalue", mat); 
+fs.write("doublevalue", d); 
+fs.write("strvalue", str); 
+fs.release(); 
+```
+
+
+
+执行上述代码将生成如下 JSON 文件：
+
+```json
+{ 
+  "matvalue": { 
+    "type_id": "opencv-matrix", 
+    "rows": 3, 
+    "cols": 3, 
+    "dt": "d", 
+    "data": [ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 ] 
+  }, 
+  "doublevalue": 9.9900099999999998e+02, 
+  "strvalue": "a random note" 
+} 
+```
+
+
+
+可见，`FileStorage` 类自动确保 JSON 文件结构正确且数据可逆存储。通常建议通过 `isOpened` 函数检查文件是否成功打开（此处为简洁省略）。此过程称为**类或数据结构的序列化**。读取序列化数据的示例如下：
+
+```cpp
+using namespace cv; 
+FileStorage fs; 
+fs.open("c:/dev/test.json", 
+    FileStorage::READ | FileStorage::FORMAT_JSON); 
+
+FileNode sn = fs["strvalue"]; 
+FileNode dn = fs["doublevalue"]; 
+FileNode mn = fs["matvalue"]; 
+
+String str = sn; 
+Matx33d mat = mn; 
+double d = dn; 
+fs.release(); 
+```
+
+
+
+出于可读性考虑（并展示 `FileStorage` 类实际读取并创建 `FileNode` 实例的过程），我们通过 `FileNode` 中转赋值给变量。显然您也可以直接将节点读取结果赋值给合适类型的变量。这两个类功能远不止于此，值得深入探索，但已足够帮助我们理解 `cv::Algorithm` 类如何利用它们。现在我们知道这些类能便捷存储和读取各类数据结构（包括 OpenCV 特有类型），可以深入解析 `cv::Algorithm` 本身。
+
+如之前所见，`cv::Algorithm` 类通过上述类存储和读取算法状态（包括参数、输入输出值等），并提供以下方法（具体实现由子类决定，此处仅关注结构）：
+
+`cv::Algorithm` 类提供的方法：
+
+-   `read`: 多个重载版本，用于读取算法状态
+-   `write`: 类似 `read`，用于保存算法状态
+-   `clear`: 清除算法状态
+-   `empty`: 判断算法状态是否为空（例如是否成功加载）
+-   `load`: 功能与 `read` 类似
+-   `loadFromString`: 从字符串加载算法状态
+
+查看 OpenCV 官网的 [`cv::Algorithm` 文档页](https://docs.opencv.org/)（特别是继承图），您会发现大量重写该类的子类。这些子类都包含上述方法，同时提供自身特有的函数。其中 `Feature2D` 类（本章重点）负责 OpenCV 中所有特征检测和描述符提取算法，其与子类构成 OpenCV 的 **2D 特征框架**，成为本章后续内容的主题。
+
+
+
+# 2D 特征框架
+
+如前所述，OpenCV 提供了多种特征检测和描述符提取算法的实现类，这些算法由全球计算机视觉研究者开发。与 OpenCV 中其他复杂算法类似，特征检测器和描述符提取器通过继承 `cv::Algorithm` 类实现。该子类名为 `Feature2D`，包含所有特征检测和描述符提取类共有的函数。任何用于检测特征和提取描述符的类都应是 `Feature2D` 的子类。OpenCV 为此定义了两个类类型：
+
+-   `FeatureDetector`
+-   `DescriptorExtractor`
+
+需注意这两个类本质上是 `Feature2D` 的别名，OpenCV 内部通过以下 typedef 语句定义（原因将在本节后续说明）：
+
+```cpp
+typedef Feature2D FeatureDetector; 
+typedef Feature2D DescriptorExtractor; 
+```
+
+
+
+查看 `Feature2D` 类的声明也很有必要：
+
+XXXX_CODE_XXXX
+
+快速回顾 `Feature2D` 类的声明要点：首先，它继承自 `cv::Algorithm`。`read`、`write` 和 `empty` 函数是重写的父类方法。以下新增函数是特征检测器和描述符提取器所需的核心功能：
+
+-   `detect`: 用于从单幅或多幅图像中检测特征（关键点）
+-   `compute`: 从关键点提取（计算）描述符
+-   `detectAndCompute`: 同时执行检测和计算
+-   `descriptorSize`、`descriptorType` 和 `defaultNorm`: 算法相关参数，由各 `Feature2D` 子类重写实现
+
+这种将特征检测器和描述符提取器归类到单一类的方式看似奇特，实则有其合理性：部分算法（非全部）同时提供特征检测和描述符提取功能。随着后续具体算法的讲解，这一点将更加清晰。接下来我们将介绍 OpenCV 2D 特征框架中的现有 `Feature2D` 类和算法。
+
+# 特征检测
+
+OpenCV 提供了多个类用于从图像中检测特征（关键点）。每个类根据其实现的特定算法有不同的参数配置要求，但所有类都通过继承 `Feature2D` 获得了共有的 `detect` 函数。在 OpenCV 中，关键点（特征）由 `KeyPoint` 类实例表示，包含以下核心属性：
+
+-   `pt`（坐标点）：关键点在图像中的位置（X 和 Y 坐标）
+-   `angle`（角度）：关键点的顺时针旋转角度（0-360 度），若算法不支持角度检测则设为 -1
+-   `response`（响应强度）：关键点的强度值，可用于排序或过滤弱关键点
+-   `size`（尺寸）：定义关键点邻域范围的直径，用于后续处理
+-   `octave`（八度层级）：检测到该关键点的图像金字塔层级。这是实现尺度不变性的核心概念，通过处理不同缩放版本的图像（仅缩小）来实现
+
+以下是 OpenCV 现有特征检测器类的简要说明及使用示例：
+
+- **AgastFeatureDetector**：实现 **AGAST**（自适应通用加速段测试）算法，用于检测图像角点。接收三个可省略参数（使用默认值）。示例：
+
+    XXXX_CODE_XXXX
+
+
+
+如上所示，我们使用默认参数调用了 `AgastFeatureDetector`。在深入分析结果之前，先注意代码中使用的 `Ptr` 类——这是 OpenCV 实现的**智能指针**（共享指针）。使用智能指针的优势在于无需手动释放内存，且多个 `Ptr` 实例可共享同一指针资源（内存仅在最后一个指针销毁时释放），这在复杂代码中能大幅简化内存管理。
+
+需注意，必须通过静态 `create` 函数创建 `AgastFeatureDetector` 的共享指针实例（因此类为抽象类，无法直接实例化）。代码其余部分较为常规：创建 `KeyPoint` 的 `std::vector`，然后通过 AGAST 算法在输入图像中检测关键点。
+
+更灵活的编码方式是使用多态和 `Feature2D` 基类。由于 `AgastFeatureDetector` 是 `Feature2D` 的子类，可重写代码如下：
+
+XXXX_CODE_XXXX
+
+这种方式便于在不创建多个类实例的情况下切换不同特征检测算法。例如，根据 `alg` 参数值（自定义枚举类型，包含算法名称）选择使用 AGAST 或 AKAZE 算法：
+
+XXXX_CODE_XXXX
+
+在使用 AGAST 算法前，建议对图像进行模糊处理以减少错误关键点（锐利图像中微小细节易被误检为边缘或角点）。检测到关键点后，可通过遍历关键点绘制小圆点：
+
+XXXX_CODE_XXXX
+
+更优方案是使用 OpenCV 2D 特征框架的专用函数 `drawKeypoints`。该函数自动处理图像复制，并以高区分度颜色绘制关键点。以下是完整的 AGAST 关键点检测与绘制代码：
+
+XXXX_CODE_XXXX
+
+假设左侧为原始测试图像，执行上述代码将生成右侧结果（关键点标注图像）：
+
+![](doc/img/8749441e-4ab0-46e9-a14b-759441788c69.png)
+
+下图展示结果图像的局部放大效果：
+
+![](doc/img/f6734d80-de0c-4300-b511-10e29fe41f09.png)
+
+尽管示例中使用非多态方法，但实际开发中推荐使用前文所述的多态方式，便于根据不同场景切换算法。
+
+
+
+在前面的示例中，我们使用了默认参数（通过省略参数实现）。要更好地控制 AGAST 算法的行为，需要了解以下参数：
+
+-   `threshold`（阈值）：默认设为 10，用于根据中心像素与周围环形像素的强度差异筛选特征。阈值越高检测到的特征越少，反之亦然
+-   `NonmaxSuppression`（非极大值抑制）：默认启用（true），可进一步过滤冗余关键点
+-   `type`（算法类型）：决定 AGAST 算法的具体实现类型，可选值：
+    -   `AGAST_5_8`
+    -   `AGAST_7_12d`
+    -   `AGAST_7_12s`
+    -   `OAST_9_16`（默认值）
+
+可以通过 Qt 控件获取用户输入的参数。下图展示了 AGAST 算法的参数调节界面及对应代码实现（完整插件代码可在本节末下载，适配我们的 computer_vision 项目）：
+
+![](doc/img/d85b48e5-2782-44f2-ac7d-209179b04cdb.png)
+
+当调整阈值或选择不同 AGAST 类型时，注意检测关键点数量的变化。示例代码中：`agastThreshSpin` 是阈值调节旋钮的 objectName，`agastNonmaxCheck` 是复选框的 objectName，`agastTypeCombo` 是类型选择下拉框的 objectName：
+
+XXXX_CODE_XXXX
+
+OpenCV 提供了便捷函数 `AGAST`（或 `cv::AGAST`，考虑命名空间），可直接在灰度图像上调用 AGAST 算法而无需使用 `AgastFeatureDetector` 类。示例如下：
+
+XXXX_CODE_XXXX
+
+本节介绍的算法（以及 OpenCV 中几乎所有算法）通常基于全球研究者的论文成果。建议查阅相关论文以深入理解算法实现细节、参数作用机制及高效使用方法。每个算法示例结束后将提供参考文献供进一步研究。
+
+**AGAST 算法参考文献**：  
+Elmar Mair, Gregory D. Hager, Darius Burschka, Michael Suppa, and Gerhard Hirzinger. Adaptive and generic corner detection based on the accelerated segment test. In European Conference on Computer Vision (ECCV'10), September 2010.
+
+让我们继续介绍其他特征检测算法。
+
+# KAZE 与 AKAZE
+
+`KAZE` 和 `AKAZE`（**加速 KAZE**）类可用于通过 KAZE 算法（及其加速版本）检测特征。关于 KAZE 与 AKAZE 算法细节，请参阅后附参考文献。与 AGAST 类似，我们可使用默认参数直接调用 `detect` 函数，或通过 Qt 控件获取参数以精细调节算法行为。示例如下：
+
+![](doc/img/abf57665-8afc-459f-8087-cd00c0bb20af.png)
+
+**AKAZE 和 KAZE 的主要参数**：
+
+-   `nOctaves`（八度数，默认 4）：定义图像的最大八度层级
+-   `nOctaveLayers`（每八度层数，默认 4）：每个八度（或尺度层级）的子层数
+-   `Diffusivity`（扩散类型）：KAZE/AKAZE 使用的非线性扩散方法（详见参考文献），可选值：
+    -   `DIFF_PM_G1`
+    -   `DIFF_PM_G2`
+    -   `DIFF_WEICKERT`
+    -   `DIFF_CHARBONNIER`
+-   `Threshold`（阈值，默认 0.001）：接受关键点的响应值。阈值越低检测到的关键点越多，反之亦然
+-   `Descriptor Type`（描述符类型，仅 AKAZE 类支持）：
+    -   `DESCRIPTOR_KAZE_UPRIGHT`
+    -   `DESCRIPTOR_KAZE`
+    -   `DESCRIPTOR_MLDB_UPRIGHT`
+-   `descriptor_size`（描述符尺寸）：定义描述符大小。0 表示完整尺寸（默认值）
+-   `descriptor_channels`（描述符通道数，默认 3）
+
+目前可暂不关注描述符相关参数（如类型/尺寸/通道数），后续章节将详述。这些参数主要影响描述符提取而非关键点检测。
+
+以下示例代码根据界面中 "Accelerated" 复选框状态选择 KAZE（未勾选）或 AKAZE（勾选）：
+
+XXXX_CODE_XXXX
+
+**参考文献**：
+
+1. *KAZE Features*. Pablo F. Alcantarilla, Adrien Bartoli and Andrew J. Davison. 发表于欧洲计算机视觉会议（ECCV），意大利佛罗伦萨，2012 年 10 月
+2. *Fast Explicit Diffusion for Accelerated Features in Nonlinear Scale Spaces*. Pablo F. Alcantarilla, Jesús Nuevo and Adrien Bartoli. 发表于英国机器视觉会议（BMVC），英国布里斯托，2013 年 9 月
+
+# BRISK 类
+
+`BRISK` 类可用于通过 **BRISK**（二进制鲁棒可扩展不变关键点）算法检测图像特征。关于算法原理及 OpenCV 底层实现细节，请参考后附论文。其用法与 `AGAST` 和 `KAZE` 类似：通过 `create` 函数创建类实例，设置参数（若需覆盖默认值），最后调用 `detect` 函数。示例如下：
+
+![](doc/img/8c096657-f322-40f2-8206-13a2695755bb.png)
+
+以下是对应用户界面的源码实现。控件名称可直观对应 BRISK 算法的三个参数：
+- `thresh`（阈值，类似 `AGAST` 类的阈值参数，因 BRISK 内部使用相似方法）
+- `octaves`（八度数，类似 `KAZE` 和 `AKAZE` 类的参数）
+- `patternScale`（模式缩放参数，默认设为 1）：
+
+XXXX_CODE_XXXX
+
+**参考文献**：  
+Stefan Leutenegger, Margarita Chli, and Roland Yves Siegwart. Brisk: Binary robust invariant scalable keypoints. 发表于 IEEE 国际计算机视觉会议（ICCV），2011 年，2548-2555 页。IEEE, 2011.
+
+# FAST
+
+`FastFeatureDetector` 类可用于通过 **FAST**（加速段测试特征）方法检测图像特征。FAST 与 AGAST 算法具有高度相似性（两者均采用加速段测试技术），这在 OpenCV 的实现方式和类用法中可见一斑。建议查阅后附论文了解算法细节，以下重点展示其用法示例：
+
+![](doc/img/c5056c39-5e19-4e00-ae63-6663ed3bff56.png)
+
+以下是使用 FAST 算法检测图像关键点的界面源码实现。所有三个参数的含义与 AGAST 算法相同，但 `type` 参数可选值如下：
+
+-   `TYPE_5_8`
+-   `TYPE_7_12`
+-   `TYPE_9_16`
+
+**参考文献**：  
+Edward Rosten and Tom Drummond. Machine learning for high-speed corner detection. 发表于计算机视觉 ECCV 2006，430-443 页。Springer, 2006.
+
+
+
+# GFTT（优质跟踪特征）
+
+`GFTTDetector` 类可用于通过 **Harris**（以发明者命名）和 **GFTT** 角点检测算法检测特征。该类实质上是将两种特征检测方法合并到一个类中（因 GFTT 是 Harris 算法的改进版本），具体使用哪种算法由输入参数决定。以下通过示例说明其用法并简要解析参数：
+
+![](doc/img/5431337c-c412-4612-b9d8-1c0c4e265409.png)
+
+相关用户界面的源码实现如下：
+
+XXXX_CODE_XXXX
+
+**`GFTTDetector` 类参数说明**：
+
+-   `useHarrisDetector`：设为 `true` 时使用 Harris 算法，否则使用 GFTT（默认 `false`）
+-   `blockSize`：计算像素邻域导数协方差矩阵的块大小（默认 3）
+-   `K`：Harris 算法使用的常数参数
+-   `maxFeatures`（或 `maxCorners`）：限制检测关键点的最大数量（默认 1000，超过时仅返回响应最强的关键点）
+-   `minDistance`：关键点间最小欧氏距离（默认 1，非像素距离）
+-   `qualityLevel`：质量阈值系数（实际阈值 = 该系数 × 图像中最佳关键点质量值）
+
+**参考文献**：
+
+1.  Jianbo Shi 和 Carlo Tomasi. *Good features to track*. 发表于 IEEE 计算机视觉与模式识别会议（CVPR'94），1994 年，593-600 页。IEEE, 1994.
+2.  C. Harris 和 M. Stephens (1988). *A combined corner and edge detector*. 第四届 Alvey 视觉会议论文集，147-151 页。
+
+# ORB
+
+最后介绍 **ORB** 算法（本节涵盖的最后一个特征检测算法）。
+
+`ORB` 类可通过 **Oriented BRIEF**（二进制鲁棒独立基本特征）算法检测图像关键点。该类封装了 FAST 和 Harris 等已学方法进行关键点检测。尽管部分参数涉及描述符提取（后续讲解），但 `ORB` 类仍可直接用于关键点检测，示例如下：
+
+![](doc/img/2cfa7427-2163-4a62-868c-47e9ef19e96a.png)
+
+以下是对应用户界面的源码实现。控件 `objectName` 属性与参数对应关系直观，具体代码如下：
+
+XXXX_CODE_XXXX
+
+参数设置流程与前述算法一致，以下为详细参数解析：
+
+-   `MaxFeatures`：需检索的关键点最大数量（实际检测数可能低于此值，但不会超过）
+-   `ScaleFactor`（缩放因子/金字塔降采样比率）：决定图像金字塔各层级的缩放比例，用于从不同尺度检测关键点和提取描述符（实现 ORB 的尺度不变性）
+-   `NLevels`：金字塔层级数
+-   `PatchSize`：ORB 算法使用的邻域尺寸，决定描述符提取区域范围（需与 `EdgeThreshold` 参数值相近）
+-   `EdgeThreshold`：关键点检测时忽略的像素边界宽度
+-   `WTA_K`：ORB 内部使用的 WTA 哈希 K 值，决定描述符中每个元素的生成点数（后续详述）
+-   `ScoreType`：关键点检测方法选择：
+    -   `ORB::HARRIS_SCORE`：使用 Harris 角点检测算法
+    -   `ORB::FAST_SCORE`：使用 FAST 关键点检测算法
+-   `FastThreshold`：ORB 关键点检测算法的阈值
+
+**参考文献**：
+
+1.  Ethan Rublee, Vincent Rabaud, Kurt Konolige, and Gary Bradski. *Orb: an efficient alternative to sift or surf*. 发表于 IEEE 国际计算机视觉会议（ICCV），2011 年，2564-2571 页。IEEE, 2011.
+2.  Michael Calonder, Vincent Lepetit, Christoph Strecha, and Pascal Fua, *BRIEF: Binary Robust Independent Elementary Features*, 第 11 届欧洲计算机视觉会议（ECCV），希腊赫拉克利翁。LNCS Springer，2010 年 9 月。
+
+至此，我们已掌握 OpenCV 3 中多种关键点检测算法的使用方法。需注意，除非从关键点提取描述符，否则这些关键点（特征）难以实际应用。下一节将学习关键点描述符提取技术，进而掌握 OpenCV 的描述符匹配能力，结合本章所学类实现物体识别、检测、跟踪与分类。建议深入阅读各算法论文以理解技术细节（尤其当您计划开发自定义关键点检测器时），但若仅需使用现有算法，明确其用途即可满足需求。
 
 ---
 
