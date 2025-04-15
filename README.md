@@ -5392,7 +5392,40 @@ typedef Feature2D DescriptorExtractor;
 
 查看 `Feature2D` 类的声明也很有必要：
 
-XXXX_CODE_XXXX
+```cpp
+class Feature2D : public virtual Algorithm 
+{ 
+  public: 
+  virtual ~Feature2D(); 
+  virtual void detect(InputArray image, 
+                      std::vector<KeyPoint>& keypoints, 
+                      InputArray mask=noArray() ); 
+  virtual void detect(InputArrayOfArrays images, 
+                      std::vector<std::vector<KeyPoint> >& keypoints, 
+                      InputArrayOfArrays masks=noArray() ); 
+    virtual void compute(InputArray image, 
+                        std::vector<KeyPoint>& keypoints, 
+                      	OutputArray descriptors ); 
+    virtual void compute( InputArrayOfArrays images, 
+                          std::vector<std::vector<KeyPoint> >& keypoints, 
+                          OutputArrayOfArrays descriptors ); 
+    virtual void detectAndCompute(InputArray image, 
+                                  InputArray mask, 
+                                  std::vector<KeyPoint>& keypoints, 
+                                  OutputArray descriptors, 
+                                  bool useProvidedKeypoints=false ); 
+      virtual int descriptorSize() const; 
+      virtual int descriptorType() const; 
+      virtual int defaultNorm() const;     
+      void write( const String& fileName ) const; 
+      void read( const String& fileName ); 
+      virtual void write( FileStorage&) const; 
+      virtual void read( const FileNode&); 
+      virtual bool empty() const; 
+}; 
+```
+
+
 
 快速回顾 `Feature2D` 类的声明要点：首先，它继承自 `cv::Algorithm`。`read`、`write` 和 `empty` 函数是重写的父类方法。以下新增函数是特征检测器和描述符提取器所需的核心功能：
 
@@ -5415,31 +5448,68 @@ OpenCV 提供了多个类用于从图像中检测特征（关键点）。每个�
 
 以下是 OpenCV 现有特征检测器类的简要说明及使用示例：
 
-- **AgastFeatureDetector**：实现 **AGAST**（自适应通用加速段测试）算法，用于检测图像角点。接收三个可省略参数（使用默认值）。示例：
+- **`AgastFeatureDetector`**：实现 **AGAST**（自适应通用加速段测试）算法，用于检测图像**角点**。接收三个可省略参数（使用默认值）。示例：
 
-    XXXX_CODE_XXXX
+    ```cpp
+    Ptr<AgastFeatureDetector> agast = AgastFeatureDetector::create(); 
+    vector<KeyPoint> keypoints; 
+    agast->detect(inputImage, keypoints); 
+    ```
 
+    如上所示，我们使用默认参数调用了 `AgastFeatureDetector`。在深入分析结果之前，先注意代码中使用的 `Ptr` 类——这是 OpenCV 实现的**智能指针**（共享指针）。使用智能指针的优势在于无需手动释放内存，且**多个 `Ptr` 实例可共享同一指针资源（内存仅在最后一个指针销毁时释放）**，这在复杂代码中能大幅简化内存管理。
 
-
-如上所示，我们使用默认参数调用了 `AgastFeatureDetector`。在深入分析结果之前，先注意代码中使用的 `Ptr` 类——这是 OpenCV 实现的**智能指针**（共享指针）。使用智能指针的优势在于无需手动释放内存，且多个 `Ptr` 实例可共享同一指针资源（内存仅在最后一个指针销毁时释放），这在复杂代码中能大幅简化内存管理。
-
-需注意，必须通过静态 `create` 函数创建 `AgastFeatureDetector` 的共享指针实例（因此类为抽象类，无法直接实例化）。代码其余部分较为常规：创建 `KeyPoint` 的 `std::vector`，然后通过 AGAST 算法在输入图像中检测关键点。
+**需注意，必须通过静态 `create` 函数创建 `AgastFeatureDetector` 的共享指针实例（因此类为抽象类，无法直接实例化）。**代码其余部分较为常规：创建 `KeyPoint` 的 `std::vector`，然后通过 AGAST 算法在输入图像中检测关键点。
 
 更灵活的编码方式是使用多态和 `Feature2D` 基类。由于 `AgastFeatureDetector` 是 `Feature2D` 的子类，可重写代码如下：
 
-XXXX_CODE_XXXX
+```cpp
+Ptr<Feature2D> fd = AgastFeatureDetector::create(); 
+vector<KeyPoint> keypoints; 
+fd->detect(inputImage, keypoints); 
+```
+
+
 
 这种方式便于在不创建多个类实例的情况下切换不同特征检测算法。例如，根据 `alg` 参数值（自定义枚举类型，包含算法名称）选择使用 AGAST 或 AKAZE 算法：
 
-XXXX_CODE_XXXX
+```cpp
+Ptr<Feature2D> fd; 
+switch(alg) 
+{ 
+  case AGAST_ALG: 
+  fd = AgastFeatureDetector::create(); 
+  break; 
 
-在使用 AGAST 算法前，建议对图像进行模糊处理以减少错误关键点（锐利图像中微小细节易被误检为边缘或角点）。检测到关键点后，可通过遍历关键点绘制小圆点：
+  case AKAZE_ALG: 
+   fd = AKAZE::create(); 
+   break; 
+} 
+vector<KeyPoint> keypoints; 
+fd->detect(inputImage, keypoints); 
+```
 
-XXXX_CODE_XXXX
+
+
+**在使用 AGAST 算法前，建议对图像进行模糊处理以减少错误关键点（锐利图像中微小细节易被误检为边缘或角点）。**检测到关键点后，可通过遍历关键点绘制小圆点：
+
+```cpp
+inputImage.copyTo(outputImage); 
+foreach(KeyPoint kp, keypoints) 
+	circle(outputImage, kp.pt, 1, Scalar(0,0,255), 2); 
+```
+
+
 
 更优方案是使用 OpenCV 2D 特征框架的专用函数 `drawKeypoints`。该函数自动处理图像复制，并以高区分度颜色绘制关键点。以下是完整的 AGAST 关键点检测与绘制代码：
 
-XXXX_CODE_XXXX
+```cpp
+Ptr<AgastFeatureDetector> agast = AgastFeatureDetector::create(); 
+vector<KeyPoint> keypoints; 
+agast->detect(inputImage, keypoints); 
+drawKeypoints(inputImage, keypoints, outputImage); 
+```
+
+
 
 假设左侧为原始测试图像，执行上述代码将生成右侧结果（关键点标注图像）：
 
@@ -5455,7 +5525,7 @@ XXXX_CODE_XXXX
 
 在前面的示例中，我们使用了默认参数（通过省略参数实现）。要更好地控制 AGAST 算法的行为，需要了解以下参数：
 
--   `threshold`（阈值）：默认设为 10，用于根据中心像素与周围环形像素的强度差异筛选特征。阈值越高检测到的特征越少，反之亦然
+-   `threshold`（阈值）：默认设为 10，用于根据中心像素与周围环形像素的强度差异筛选特征。**阈值越高检测到的特征越少**，反之亦然
 -   `NonmaxSuppression`（非极大值抑制）：默认启用（true），可进一步过滤冗余关键点
 -   `type`（算法类型）：决定 AGAST 算法的具体实现类型，可选值：
     -   `AGAST_5_8`
@@ -5469,11 +5539,33 @@ XXXX_CODE_XXXX
 
 当调整阈值或选择不同 AGAST 类型时，注意检测关键点数量的变化。示例代码中：`agastThreshSpin` 是阈值调节旋钮的 objectName，`agastNonmaxCheck` 是复选框的 objectName，`agastTypeCombo` 是类型选择下拉框的 objectName：
 
-XXXX_CODE_XXXX
+```cpp
+Ptr<AgastFeatureDetector> agast = AgastFeatureDetector::create(); 
+vector<KeyPoint> keypoints; 
+agast->setThreshold(ui->agastThreshSpin->value()); 
+agast->setNonmaxSuppression(ui->agastNonmaxCheck->isChecked()); 
+agast->setType(ui->agastTypeCombo->currentIndex()); 
+agast->detect(inputImage,  keypoints); 
+drawKeypoints(inputImage,  keypoints,  outputImage); 
+```
 
-OpenCV 提供了便捷函数 `AGAST`（或 `cv::AGAST`，考虑命名空间），可直接在灰度图像上调用 AGAST 算法而无需使用 `AgastFeatureDetector` 类。示例如下：
 
-XXXX_CODE_XXXX
+
+OpenCV 提供了便捷函数 `AGAST`（或 `cv::AGAST`，考虑命名空间），可直接在**灰度图像**上调用 AGAST 算法而无需使用 `AgastFeatureDetector` 类。示例如下：
+
+```cpp
+vector<KeyPoint> keypoints; 
+AGAST(inputImage, 
+      keypoints, 
+      ui->agastThreshSpin->value(), 
+      ui->agastNonmaxCheck->isChecked(), 
+      ui->agastTypeCombo->currentIndex()); 
+drawKeypoints(inputImage, 
+              keypoints, 
+              outputImage); 
+```
+
+
 
 本节介绍的算法（以及 OpenCV 中几乎所有算法）通常基于全球研究者的论文成果。建议查阅相关论文以深入理解算法实现细节、参数作用机制及高效使用方法。每个算法示例结束后将提供参考文献供进一步研究。
 
