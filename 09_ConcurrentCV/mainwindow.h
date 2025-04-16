@@ -28,6 +28,7 @@ public:
 
     QFileInfoList getImagesInFolder();
     static void addDateTimeOnImage(QFileInfo &info);
+    static bool filterImage(QFileInfo &info);
 
 public slots:
     void processInLoop();

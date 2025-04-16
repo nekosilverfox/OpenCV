@@ -494,3 +494,7 @@ void Keypoint_Plugin::on_matcherCombo_currentIndexChanged(int)
 {
     emit CvPluginInterface::updateNeeded();
 }
+
+
+
+

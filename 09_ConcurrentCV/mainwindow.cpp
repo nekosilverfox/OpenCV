@@ -40,12 +40,22 @@ void MainWindow::addDateTimeOnImage(QFileInfo &info)
     QString date = info.birthTime().toString();
     cv::putText(image,
                 date.toStdString(),
-                cv::Point(240, 240), // 25 pixels offset from the corner
+                cv::Point(80, 80), // 25 pixels offset from the corner
                 cv::FONT_HERSHEY_PLAIN,
                 1.0,
                 cv::Scalar(0, 0, 255));  // red
 
     cv::imwrite(info.absoluteFilePath().toStdString(), image);
+}
+
+/**
+ * @brief MainWindow::filterImage 返回布尔值的过滤函数来筛选早于2025年的图像
+ * @param info
+ * @return
+ */
+bool MainWindow::filterImage(QFileInfo &info)
+{
+    return info.birthTime().date().year() < 2025;
 }
 
 void MainWindow::processInLoop()
@@ -85,9 +95,11 @@ void MainWindow::processInConcurrent()
     QFuture<void> future = QtConcurrent::map(fileList, addDateTimeOnImage);
     QFutureWatcher<void>* watcher = new QFutureWatcher<void>(this);
 
+    // 当任务的进度范围, 通常用于初始化或重置进度条的显示范围（如 0 到 100）
     connect(watcher, &QFutureWatcher<void>::progressRangeChanged,
             ui->barProcess, &QProgressBar::setRange);
 
+    // 当任务的当前进度值发生变化时触发。用于更新进度条的当前值
     connect(watcher, &QFutureWatcher<void>::progressValueChanged,
             ui->barProcess, &QProgressBar::setValue);
 
