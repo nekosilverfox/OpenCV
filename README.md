@@ -18,6 +18,14 @@
 <div align="left">
 <!-- 顶部至此截止 -->
 <!-- SPbSTU 报告起始 -->
+> [!note]
+>
+> **如果你想系统的学习 Qt，可以参考这个仓库：**
+>
+> 关于 [Qt 无比详细教程及案例实现](https://github.com/NekoSilverFox/Qt)：https://github.com/NekoSilverFox/Qt 其中不仅涵盖了 Qt 基本控件的使用及讲解，还包含了大学和培训机构不会讲到的：插件设计及实现、基于 QTest 的静态动态、动态测试、CI/CD的使用、Qt 函数/方法注意事项、Qt 的神奇技巧等~
+>
+> 祝你在学习道路上一帆风顺！！
+
 
 
 [toc]
@@ -5872,7 +5880,6 @@ drawKeypoints(inputImage, keypoints, outputImage);
    
    - `distance`：描述符间相似度距离（值越小匹配度越高）
    
-
 5. **可视化匹配结果**  
    使用 `drawMatches` 函数自动生成可视化结果：
    
@@ -6785,7 +6792,7 @@ static void addDateTime(QFileInfo &info);
     
         QElapsedTimer elapsedTimer;
         elapsedTimer.start();
-    
+        
         ui->barProcess->setRange(0, fileList.count() - 1);
         for (int i = 0; i < fileList.count(); i++)
         {
@@ -6793,7 +6800,7 @@ static void addDateTime(QFileInfo &info);
             ui->barProcess->setValue(i);
             qApp->processEvents();
         }
-    
+        
         qint64 e = elapsedTimer.elapsed();
         QMessageBox::information(this,
                                  tr("Done!"),
@@ -6947,7 +6954,7 @@ QtConcurrent::filteredReduced(list, filterImage, addDateTime);
 - `images`（输入图像）：需计算直方图的图像数组（`cv::Mat` 数组或 `std::vector<cv::Mat>`）
 - `nimages`（图像数量）：输入图像的数量。若使用 `std::vector` 传递图像，此参数可省略
 - `channels`（通道索引）：指定用于计算直方图的通道索引数组
-- `mask`（掩膜）：单通道 `Mat` 类，指定计算直方图的区域（非零像素参与计算）。无需掩膜时传入空 `Mat`
+- `mask`（蒙版）：单通道 `Mat` 类，指定计算直方图的区域（非零像素参与计算）。无需蒙版时传入空 `Mat`
 - `hist`（输出直方图）：存储计算结果的 `Mat` 类
 - `dims`（直方图维度）：取值范围1-32（OpenCV 3当前实现），根据使用的通道数设定
 - `histSize`（分箱数量）：每个维度的直方图分箱数数组。分箱（Binning）指将相似值归入同一区间计算
@@ -6957,24 +6964,68 @@ QtConcurrent::filteredReduced(list, filterImage, addDateTime);
 
 
 
-现在通过示例演示 `calcHist` 函数的使用。首先以灰度图像为例计算直方图：
-XXXX_CODE_XXXX
+现在通过示例演示 `calcHist` 函数的使用。首先以**灰度图像**为例计算直方图：
+
+```cpp
+int bins = 256; 
+int channels[] = {0}; // the first and the only channel 
+int histSize[] = { bins }; // number of bins 
+
+float rangeGray[] = {0,255}; // range of grayscale 
+const float* ranges[] = { rangeGray }; 
+
+Mat histogram; 
+
+calcHist(&grayImg, 
+   1, // number of images 
+   channels, 
+   Mat(), // no masks, an empty Mat 
+   histogram, 
+   1, // dimensionality 
+   histSize, 
+   ranges, 
+   true, // uniform 
+   false // not accumulate 
+); 
+```
+
+
 
 上述代码中，`grayImg` 是灰度图像的 `Mat` 类实例。由于输入为单通道灰度图像，`channels` 参数仅包含一个值（0 表示第一个通道）。`dims` 设为 1（一维直方图），其余参数使用默认值（若省略）。
 
 执行代码后，`histogram` 变量将存储灰度图像的直方图数据。这是一个单通道、单列的 `Mat` 类，包含 256 行，每行表示对应灰度级的像素数量。通过以下代码可将直方图可视化为柱状图：
-XXXX_CODE_XXXX
 
-此代码的核心逻辑是将直方图每个值绘制为矩形。每个矩形的左上角坐标通过像素值（`value`）和分箱宽度（图像宽度除以分箱数 `histSize`）计算得出。示例中 `bins` 设为 256，实现高分辨率直方图可视化（每个柱对应一个灰度级）。
+```cpp
+double maxVal = 0; 
+minMaxLoc(histogram, 
+          Q_NULLPTR, // don't need min 
+          &maxVal, 
+          Q_NULLPTR, // don't need index min 
+          Q_NULLPTR // don't need index max 
+); 
 
-*注：此处的"分辨率"指直方图的精细程度，而非图像分辨率。*
+outputImage.create(640, // any image width 
+                    360, // any image height 
+                    CV_8UC(3)); 
 
-若对左侧灰度图像执行上述代码，生成的直方图如下（右图）：
-![](doc/img/9c8c00f6-3e67-4531-a688-d8d6239e18f4.png)
+outputImage = Scalar::all(128); // empty grayish image 
 
-这段代码乍看之下可能有些复杂，但实际上非常简单。它的核心原理是直方图中的每个值都需要被绘制成一个矩形。对于每个矩形，其左上角的点是通过`value`变量和图像宽度除以直方图箱数（即`histSize`）计算得出的。在我们的示例代码中，我们简单地将箱数设置为最大值（256），从而实现了高分辨率的直方图可视化，因为条形图中的每个柱体将代表灰度图像中的一个像素强度值。
-
-需要注意的是，这里所说的分辨率并非指图像分辨率或质量，而是指构成条形图的最小单元的精细程度。
+Point p1(0,0), p2(0,outputImage.rows-1); 
+for(int i=0; i<bins; i++) 
+{ 
+  float value = histogram.at<float>(i,0); 
+  value = maxVal - value; // invert 
+  value = value / maxVal * outputImage.rows; // scale 
+  p1.y = value; 
+  p2.x = float(i+1) * float(outputImage.cols) / float(bins); 
+  rectangle(outputImage, 
+            p1, 
+            p2, 
+            Scalar::all(0), 
+            CV_FILLED); 
+          p1.x = p2.x; 
+} 
+```
 
 这段代码乍看之下可能有些复杂，但实际上非常简单。它的核心原理是直方图中的每个值都需要被绘制成一个矩形。对于每个矩形，其左上角的点是通过`value`变量和图像宽度除以直方图箱数（即`histSize`）计算得出的。在我们的示例代码中，我们简单地将箱数设置为最大值（256），从而实现了高分辨率的直方图可视化，因为条形图中的每个柱体将代表灰度图像中的一个像素强度值。
 
@@ -6992,23 +7043,25 @@ XXXX_CODE_XXXX
 
 如果需要以简单折线图代替条形图显示，可以在之前代码末尾的绘制循环中使用以下代码：
 
-    Point p1(0,0), p2(0,0); 
-    for(int i=0; i<bins; i++) 
-    { 
-      float value = histogram.at<float>(i,0); 
-      value = maxVal - value; // invert 
-      value = value / maxVal * outputImage.rows; // scale 
-      line(outputImage, 
-         p1, 
-         Point(p1.x,value), 
-         Scalar(0,0,0)); 
-      p1.y = p2.y = value; 
-      p2.x = float(i+1) * float(outputImage.cols) / float(bins); 
-      line(outputImage, 
-         p1, p2, 
-         Scalar(0,0,0)); 
-      p1.x = p2.x; 
-    } 
+```cpp
+Point p1(0,0), p2(0,0); 
+for(int i=0; i<bins; i++) 
+{ 
+  float value = histogram.at<float>(i,0); 
+  value = maxVal - value; // invert 
+  value = value / maxVal * outputImage.rows; // scale 
+  line(outputImage, 
+     p1, 
+     Point(p1.x,value), 
+     Scalar(0,0,0)); 
+  p1.y = p2.y = value; 
+  p2.x = float(i+1) * float(outputImage.cols) / float(bins); 
+  line(outputImage, 
+     p1, p2, 
+     Scalar(0,0,0)); 
+  p1.x = p2.x; 
+} 
+```
 
 如果再次使用箱数256，将产生如下输出：
 
@@ -7016,7 +7069,10 @@ XXXX_CODE_XXXX
 
 同理，我们可以为彩色（RGB）图像计算并可视化直方图。只需要对三个独立通道分别应用相同代码即可。为此，首先需要将输入图像分离到其基础通道，然后像处理单通道图像一样为每个通道计算直方图。以下是分离图像获取三个表示单通道的`Mat`类的方法：
 
-XXXX_CODE_XXXX
+```cpp
+vector<Mat> planes; 
+split(inputImage, planes); 
+```
 
 现在可以在循环中使用`planes[i]`等类似方式，将每个通道视为独立图像进行处理，并使用之前的代码示例计算和可视化其直方图。如果使用各自对应的颜色来可视化每个直方图，最终将得到类似这样的结果（生成此直方图的图像是本书之前示例中使用的彩色图像）：
 
@@ -7026,16 +7082,34 @@ XXXX_CODE_XXXX
 
 
 
-# 理解反向投影图像
+## 理解反向投影图像
 
 除了直方图本身的可视化信息之外，它还有一个更重要的用途——即直方图的反向投影。这种方法可用于通过直方图修改图像，或如本章后续内容所示，用于定位图像中的目标对象。让我们进一步解析这个概念。正如前文所述，直方图反映了像素数据在图像中的分布特征。如果我们对生成的直方图进行某种修改，然后将其重新应用到源图像（如同将直方图作为像素值的查找表），所得图像即称为反向投影图像。值得注意的是，反向投影图像始终是单通道图像，其中每个像素值都取自直方图中对应的箱值。
 
 让我们通过另一个示例来理解这个过程。首先，以下是OpenCV中计算反向投影的方法：
-XXXX_CODE_XXXX
+
+```cpp
+calcBackProject(&image, 
+                1, 
+                channels, 
+                histogram, 
+                backprojection, 
+                ranges); 
+```
+
+
 
 `calcBackProject`函数的使用方式与`calcHist`函数非常相似。只需确保传递一个额外的`Mat`类实例来获取图像的反向投影结果。由于反向投影图像中的像素值取自直方图，这些值很容易超出标准灰度范围（0到255）。因此，在计算反向投影之前，需要先对直方图结果进行归一化处理。具体操作如下：
 
-XXXX_CODE_XXXX
+```cpp
+normalize(histogram, 
+          histogram, 
+          0, 
+          255, 
+          NORM_MINMAX); 
+```
+
+
 
 `normalize`函数会将直方图中的所有值按比例缩放到指定的最小值和最大值（此处分别为0和255）。需要特别强调的是，此函数必须在调用`calcBackProject`之前执行，否则反向投影图像中会出现数据溢出问题。若尝试用`imshow`函数查看溢出后的图像，很可能会得到全白的显示结果。
 
@@ -7045,13 +7119,36 @@ XXXX_CODE_XXXX
 
 该图像中每个像素的强度值对应源图像中具有该特定值的像素数量。例如，注意反向投影图像右上角最暗的区域，该区域包含的像素值在源图像中的出现频率远低于较亮区域。换句话说，明亮区域对应的像素值在图像中分布更广且出现次数更多。那么问题来了：这种特性在图像和视频处理中有何实际应用？
 
-本质上，反向投影图像可用于生成计算机视觉操作所需的实用掩膜图像。迄今为止，我们尚未真正使用过OpenCV函数中的掩膜参数（尽管大多数函数都支持该参数）。让我们以前述反向投影图像为例：通过对直方图进行简单阈值处理，可以生成用于过滤图像中非目标区域的掩膜。假设我们需要一个掩膜来提取最暗值像素（例如像素值0到39），首先可以通过修改直方图——将前40个元素（作为最暗值的阈值，该值可设为任意其他数值或范围）设为灰度范围的最大值（255），其余设为最小值（0）——然后计算反向投影图像。示例如下：
+本质上，反向投影图像可用于生成计算机视觉操作所需的实用掩膜（蒙版 Mask）图像。迄今为止，我们尚未真正使用过OpenCV函数中的掩膜参数（尽管大多数函数都支持该参数）。让我们以前述反向投影图像为例：通过对直方图进行简单阈值处理，可以生成用于过滤图像中非目标区域的掩膜。假设我们需要一个掩膜来提取最暗值像素（例如像素值0到39），首先可以通过修改直方图——将前40个元素（作为最暗值的阈值，该值可设为任意其他数值或范围）设为灰度范围的最大值（255），其余设为最小值（0）——然后计算反向投影图像。示例如下：
 
-XXXX_CODE_XXXX
+```cpp
+calcHist(&grayImg, 
+         1, // number of images 
+         channels, 
+         Mat(), // no masks, an empty Mat 
+         histogram, 
+         1, // dimensionality 
+         histSize, 
+         ranges); 
 
+for(int i=0; i<histogram.rows; i++) 
+{ 
+  if(i < 40) // threshold 
+    histogram.at<float>(i,0) = 255; 
+  else 
+    histogram.at<float>(i,0) = 0; 
+} 
 
+Mat backprojection; 
+calcBackProject(&grayImg, 
+                 1, 
+                 channels, 
+                 histogram, 
+                 backprojection, 
+                 ranges); 
+```
 
-运行上述示例代码后，我们将在`backprojection`变量中获得如下输出图像。这本质上是一种通过阈值处理技术获取合适掩膜的方法，可用于在OpenCV计算机视觉流程中隔离图像中的最暗区域。通过此示例代码获得的掩膜可传递给任何接受掩膜参数的OpenCV函数，这些函数将仅处理掩膜中白色位置对应的像素，而忽略黑色位置对应的像素：
+运行上述示例代码后，我们将在`backprojection`变量中获得如下输出图像。这本质上是一种通过阈值处理技术获取合适掩膜的方法，可用于在OpenCV计算机视觉流程中隔离图像中的最暗区域。**通过此示例代码获得的掩膜可传递给任何接受掩膜参数的OpenCV函数**，这些函数将仅处理掩膜中白色位置对应的像素，而忽略黑色位置对应的像素：
 
 ![](doc/img/f5a7e084-48d7-4258-895c-6ca18ba0694b.png)
 
@@ -7061,29 +7158,66 @@ XXXX_CODE_XXXX
 
 仅基于RGB图像中的红色通道进行阈值过滤并不可靠，因为目标区域可能因光照过亮或过暗呈现不同红色调。此外，还需考虑与红色相近的颜色范围以确保精准识别玫瑰花区域。此类颜色处理问题的最佳解决方案是使用**色调**（Hue）、**饱和度**（Saturation）、**明度**（Value）构成的**HSV颜色空间**，其中颜色信息集中存储在单个通道（色调通道或h通道）。我们可以通过OpenCV实验进行验证，只需在新建应用程序（控制台或图形界面均可）中运行以下代码片段：
 
-
-
-XXXX_CODE_XXXX
-
-
+```cpp
+Mat image(25, 180, CV_8UC3); 
+for(int i=0; i<image.rows; i++) 
+{ 
+  for(int j=0; j<image.cols; j++) 
+  { 
+    image.at<Vec3b>(i,j)[0] = j; 
+    image.at<Vec3b>(i,j)[1] = 255; 
+    image.at<Vec3b>(i,j)[2] = 255; 
+  } 
+} 
+cvtColor(image,image,CV_HSV2BGR); 
+imshow("Hue", image); 
+```
 
 请注意，我们仅在三个通道图像中修改第一个通道，且其值从0变化到179。这将产生如下输出：
 
 ![](doc/img/c1840bf1-92e3-4af5-9f23-6bc3b7f8134b.png)
 
-如前所述，这种现象的原因是：色调（hue）单独决定了每个像素的颜色特征。而饱和度（saturation）和明度（value）通道则用于控制同一颜色的明亮（通过饱和度通道）和暗度（通过明度通道）变化。需注意的是，在HSV颜色空间中，色调值的范围为0到360度（与RGB不同），这是因为色调被建模为一个环形色轮——当值溢出时会循环回到起始点。观察前图中首尾两端均为红色即可理解这一特性：色调值接近0或360时均呈现红色调。
+如前所述，这种现象的原因是：**色调（hue）单独决定了每个像素的颜色特征。而饱和度（saturation）和明度（value）通道则用于控制同一颜色的明亮（通过饱和度通道）和暗度（通过明度通道）变化**。
+
+需注意的是，**在HSV颜色空间中，色调值的范围为0到360度（与RGB不同）**，这是因为色调被建模为一个环形色轮——当值溢出时会循环回到起始点。观察前图中首尾两端均为红色即可理解这一特性：色调值接近0或360时均呈现红色调。
 
 不过在OpenCV中，色调值通常会被除以2以适应8位存储（除非使用16位或更高位深），因此色调值范围为0到180。回顾前文代码示例可见，`Mat`类的列方向上设置的色调值从0到180变化，最终生成了我们的色谱输出图像。
 
 现在让我们运用所学知识创建颜色直方图，并通过反向投影图像来分离红色玫瑰花区域。为了实际应用，我们甚至可以通过简单代码将其改为蓝色玫瑰（本章后续将展示）。但更重要的是，这种方法可与`MeanShift`和`CamShift`算法结合使用，用于跟踪特定颜色的目标物体。我们的直方图将基于图像HSV版本中的颜色分布（即色调通道）。因此，首先需要通过以下代码将图像转换到HSV颜色空间：
 
-XXXX_CODE_XXXX
+```cpp
+Mat hsvImg; 
+cvtColor(inputImage, hsvImg, CV_BGR2HSV); 
+```
 
 随后使用与前例完全相同的直方图计算方法。此次可视化的主要差异在于：由于处理的是颜色分布直方图，需要为每个直方图箱体显示对应颜色，否则输出结果将难以解读。为实现正确可视化，我们将通过HSV到BGR的转换创建包含所有箱体颜色值的缓冲区，并据此填充输出条形图的各个柱体。以下是计算完成后正确可视化色调通道直方图（即颜色分布图）的源代码：
 
-XXXX_CODE_XXXX
+```cpp
+Mat colors(1, bins, CV_8UC3); 
+for(int i=0; i<bins; i++) 
+{ 
+  colors.at<Vec3b>(i) =  
+  Vec3b(saturate_cast<uchar>( 
+    (i+1)*180.0/bins), 255, 255); 
+} 
+cvtColor(colors, colors, COLOR_HSV2BGR); 
 
-
+Point p1(0,0), p2(0,outputImage.rows-1); 
+for(int i=0; i<ui->binsSpin->value(); i++) 
+{ 
+  float value = histogram.at<float>(i,0); 
+  value = maxVal - value; // invert 
+  value = value / maxVal * outputImage.rows; // scale 
+  p1.y = value; 
+  p2.x = float(i+1) * float(outputImage.cols) / float(bins); 
+  rectangle(outputImage, 
+   p1, 
+   p2, 
+   Scalar(colors.at<Vec3b>(i)), 
+   CV_FILLED); 
+  p1.x = p2.x; 
+} 
+```
 
 如之前代码示例所示，`maxVal`是通过直方图数据使用`minMaxLoc`函数计算得出的。`bins`即直方图箱数（或直方图尺寸），本例中该值不能超过180——因为hue值的有效范围是0到179。除需设置图表中各柱体填充颜色外，其他逻辑与之前示例基本一致。若在玫瑰示例图像中使用最大箱数180运行该代码，将得到如下输出：
 
@@ -7094,21 +7228,56 @@ XXXX_CODE_XXXX
 ![](doc/img/cd5dbeca-35be-4284-90b6-9a36eaa95662.png)
 
 观察直方图可见，24个柱体中最左侧的前两个和最右侧的两个柱体代表最接近红色的色调区域。与前例类似，我们将对非红色区域进行阈值过滤。具体代码如下：
-XXXX_CODE_XXXX
+```cpp
+for(int i=0; i<histogram.rows; i++) 
+{ 
+  if((i==0) || (i==22) || (i==23)) // filter 
+    histogram.at<float>(i,0) = 255; 
+  else 
+    histogram.at<float>(i,0) = 0; 
+} 
+```
 
 此场景非常适合开发允许用户选择并过滤直方图箱体的交互界面。您可基于现有知识，使用`QGraphicsScene`和`QGraphicsRectItem`绘制条形图，启用项选择功能，当点击*删除*按钮时移除对应柱体并过滤相关区域。
 
 完成简单阈值处理后，可通过以下代码计算反向投影。注意由于直方图是单维度结构，只有当输入图像也是单通道时才能直接应用反向投影。因此需要先从HSV图像中提取hue通道。通过`mixChannels`函数可将指定通道从一个`Mat`类复制到另一个`Mat`类。该函数需要以下参数：源/目标`Mat`类（只需深度相同，通道数可不同）、源/目标图像数量、以及决定源/目标通道索引的整数对数组（如下代码中的`fromto`数组）：
-XXXX_CODE_XXXX
-
-
+```cpp
+Mat hue; 
+int fromto[] = {0, 0}; 
+hue.create(hsvImg.size(), hsvImg.depth()); 
+mixChannels(&hsvImg, 1, &hue, 1, fromto, 1); 
+Mat backprojection; 
+calcBackProject(&hue, 
+                 1, 
+                 channels, 
+                 histogram, 
+                 backprojection, 
+                 ranges); 
+```
 
 使用`imshow`或Qt控件直接显示反向投影图像，或将其转换到RGB颜色空间后显示，即可在示例玫瑰图中看到针对红色区域的完美掩膜：
 
 ![](doc/img/63471ce6-fa9e-47c8-b8e2-1c90103e7489.png)
 
-若我们正确调整色调通道的数值，可将红色玫瑰转换为蓝色玫瑰——不仅呈现单一静态蓝色，还能保留原图对应像素的明暗层次。回顾本章先前生成的色谱图可见：红色、绿色、蓝色及再次红色分别对应色调值0、120、240和360。考虑到OpenCV中色调值被除以2（因360无法存入单字节而180可以），实际对应值应为0、60、120和180。这意味着若要将红色区域转换为蓝色，需将色调值增加120（同理可转换其他颜色）。以下代码演示如何仅在反向投影高亮区域执行色调偏移，并处理数值溢出（确保色调值不超过179）：
-XXXX_CODE_XXXX
+若我们正确调整色调通道的数值，可将红色玫瑰转换为蓝色玫瑰——不仅呈现单一静态蓝色，还能保留原图对应像素的明暗层次。回顾本章先前生成的色谱图可见：红色、绿色、蓝色及再次红色分别对应色调值0、120、240和360。考虑到OpenCV中色调值被除以2（因360无法存入单字节而180可以），实际对应值应为R-0、G-60、B-120和R-180。这意味着若要将红色区域转换为蓝色，需将色调值增加120（0 + 120, 同理可转换其他颜色）。以下代码演示如何仅在反向投影高亮区域执行色调偏移，并处理数值溢出（确保色调值不超过179）：
+```cpp
+for(int i=0; i<hsvImg.rows; i++) 
+{ 
+  for(int j=0; j<hsvImg.cols; j++) 
+  { 
+    if(backprojection.at<uchar>(i, j)) 
+    { 
+        if(hsvImg.at<Vec3b>(i,j)[0] < 60) 
+            hsvImg.at<Vec3b>(i,j)[0] += 120; 
+        else if(hsvImg.at<Vec3b>(i,j)[0] > 120) 
+            hsvImg.at<Vec3b>(i,j)[0] -= 60; 
+    } 
+  } 
+} 
+
+Mat imgHueShift; 
+cvtColor(hsvImg, imgHueShift, CV_HSV2BGR); 
+```
 
 执行该代码后，将得到如下结果图像。该图像通过将红色像素的色调值调整为蓝色后，从HSV空间转换回RGB生成：
 
@@ -7133,6 +7302,7 @@ XXXX_CODE_XXXX
 -   `HISTCMP_KL_DIV`
 
 需注意，`compareHist`函数的返回值及其解释方式完全取决于所选比较方法，不同方法差异显著，因此建议查阅OpenCV文档了解各方法的具体比较公式。以下示例代码演示了如何使用所有现有方法计算两幅图像（或两视频帧）的差异：
+
 XXXX_CODE_XXXX
 
 我们可以对以下两幅图像运行上述代码：
@@ -7422,3 +7592,12 @@ Qt 套件的严重错误可能由多种因素引发（如缺失编译器将导�
 
 
 > **注**：调试模式下所有交互操作（如变量查看、堆栈跟踪等）均通过界面底部和侧边栏的面板实现。
+
+# Qt 测试框架
+
+在开发应用程序时，调试和测试是完全不可避免的，但许多开发者往往忽视单元测试的重要性——这在大型项目和难以每次构建时手动全面测试的应用程序中尤为关键，尤其是当代码中存在需要修复的缺陷时。单元测试指的是对应用程序中的各个部件（单元）进行测试以确保其按预期工作的方法。值得注意的是，测试自动化（当今软件开发的热门话题之一）正是通过第三方软件或编程来自动化执行单元测试的过程。
+
+本节中，我们将学习如何使用 Qt 测试框架（更准确地说，是 Qt 测试命名空间以及一些额外的测试相关类）来为基于 Qt 构建的应用程序开发单元测试。与第三方测试框架不同，Qt 测试框架是一个原生（基于 Qt 框架自身）的轻量级测试框架，其众多功能包括基准测试、数据驱动测试和 GUI 测试：基准测试可用于测量函数或特定代码段的性能，数据驱动测试可帮助使用不同数据集作为输入来运行单元测试。另一方面，GUI 测试通过模拟鼠标和键盘交互实现，这同样是 Qt 测试框架覆盖的另一个方面。
+
+
+
